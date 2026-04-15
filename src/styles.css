@@ -1,0 +1,574 @@
+:root {
+  --bg: #050505;
+  --panel: rgba(17, 18, 22, 0.64);
+  --panel-strong: rgba(14, 15, 18, 0.88);
+  --text: #f4f0ea;
+  --muted: rgba(244, 240, 234, 0.64);
+  --line: rgba(255, 255, 255, 0.14);
+  --accent: #ff6a00;
+  --success: #9cf96a;
+  --danger: #ff5757;
+  font-family: 'Manrope', sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top, rgba(255, 104, 0, 0.1), transparent 28%),
+    linear-gradient(180deg, #090909 0%, #030303 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+.page-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.experience-frame {
+  position: relative;
+  width: min(100%, 1180px);
+  overflow: hidden;
+  border-radius: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(5, 5, 7, 0.92);
+  box-shadow:
+    0 30px 120px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.experience-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent);
+  pointer-events: none;
+}
+
+.media-stage,
+.telemetry-stage {
+  position: relative;
+  z-index: 1;
+}
+
+.media-stage {
+  min-height: 620px;
+  padding: 22px 20px 24px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.82)),
+    url('/assets/max-verstappen.jpg') center top / cover no-repeat;
+}
+
+.media-stage__overlay,
+.media-stage__scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.media-stage__overlay {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.22), transparent 24%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12) 10%, rgba(0, 0, 0, 0.68) 70%, rgba(0, 0, 0, 0.88) 100%);
+}
+
+.media-stage__scanlines {
+  background: linear-gradient(transparent 0%, rgba(255, 255, 255, 0.05) 100%);
+  opacity: 0.12;
+  mix-blend-mode: screen;
+}
+
+.top-bar,
+.wave-panel,
+.answer-panel,
+.track-panel,
+.telemetry-ring,
+.hud-card {
+  backdrop-filter: blur(12px);
+}
+
+.top-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow,
+.panel-label,
+.hero-kicker,
+.timer-ring__label {
+  margin: 0;
+  font-family: 'Chakra Petch', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.top-bar h1 {
+  margin: 8px 0 0;
+  max-width: 240px;
+  font-size: 26px;
+  line-height: 1.04;
+}
+
+.status-pill {
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.status-pill.is-live {
+  color: var(--success);
+}
+
+.status-pill.is-empty {
+  color: #ffd56a;
+}
+
+.wave-panel,
+.answer-panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.wave-panel {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.wave-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.play-button {
+  min-width: 112px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent) 0%, #ff8a3d 100%);
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.play-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wave-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.wave-meta p {
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.waveform-shell {
+  position: relative;
+  min-height: 72px;
+  margin-top: 14px;
+  display: grid;
+  align-items: center;
+}
+
+.waveform {
+  width: 100%;
+}
+
+.waveform-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(28, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.waveform-placeholder span {
+  display: block;
+  width: 100%;
+  height: calc(14px + (var(--i) % 7) * 5px);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.35));
+  transform-origin: center;
+  animation: pulse 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 50ms);
+  opacity: 0.9;
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 360px;
+  max-width: 320px;
+}
+
+.hero-title {
+  margin: 8px 0;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.02;
+}
+
+.hero-description {
+  margin: 0;
+  color: rgba(244, 240, 234, 0.8);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.telemetry-stage {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(255, 106, 0, 0.09), transparent 28%),
+    linear-gradient(180deg, rgba(15, 16, 22, 0.98), rgba(7, 8, 12, 1));
+}
+
+.telemetry-stage__header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.telemetry-stage__header h2 {
+  margin: 6px 0 0;
+  font-size: 28px;
+}
+
+.telemetry-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.telemetry-sources span,
+.driver-pill {
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.track-panel {
+  position: relative;
+  margin-top: 18px;
+  min-height: 310px;
+  padding: 20px;
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(14, 15, 18, 0.96), rgba(14, 15, 18, 0.72));
+  overflow: hidden;
+}
+
+.track-panel__glow {
+  position: absolute;
+  inset: -20% auto auto 8%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 106, 0, 0.24), transparent 68%);
+  filter: blur(22px);
+}
+
+.track-reference,
+.track-canvas {
+  position: absolute;
+  inset: 20px;
+  width: calc(100% - 40px);
+  height: calc(100% - 40px);
+}
+
+.track-reference {
+  object-fit: contain;
+  opacity: 0.06;
+  filter: invert(1);
+}
+
+.track-canvas {
+  z-index: 1;
+}
+
+.track-canvas__shadow,
+.track-canvas__line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.track-canvas__shadow {
+  stroke: rgba(255,255,255,0.15);
+  stroke-width: 18;
+}
+
+.track-canvas__line {
+  stroke: #f5f5f2;
+  stroke-width: 8;
+  filter: drop-shadow(0 0 16px rgba(255,255,255,0.24));
+}
+
+.track-start {
+  fill: var(--accent);
+}
+
+.track-marker-glow {
+  fill: rgba(255,106,0,0.28);
+  filter: blur(5px);
+}
+
+.track-marker {
+  fill: #ff5c39;
+  stroke: #fff0ea;
+  stroke-width: 1.6;
+}
+
+.telemetry-ring {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.18);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: rgba(0,0,0,0.42);
+  z-index: 2;
+}
+
+.telemetry-ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.telemetry-ring strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 25px;
+  letter-spacing: -0.06em;
+}
+
+.telemetry-ring small {
+  color: var(--muted);
+}
+
+.telemetry-hud {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.hud-card {
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+}
+
+.hud-card span,
+.hud-card small {
+  display: block;
+  color: var(--muted);
+  font-family: 'Chakra Petch', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.hud-card strong {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 32px;
+  line-height: 0.9;
+}
+
+.answer-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 24px;
+}
+
+.answer-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.answer-panel__subtext {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.guess-option {
+  min-height: 54px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.guess-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.4);
+}
+
+.guess-option.is-selected {
+  background: rgba(255,255,255,0.1);
+}
+
+.guess-option.is-correct {
+  border-color: rgba(156,249,106,0.9);
+  background: rgba(156,249,106,0.14);
+}
+
+.guess-option.is-wrong {
+  border-color: rgba(255,87,87,0.9);
+  background: rgba(255,87,87,0.12);
+}
+
+.answer-feedback {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.answer-feedback h2,
+.answer-feedback p {
+  margin: 0;
+}
+
+.answer-feedback h2 {
+  margin-top: 6px;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.answer-feedback p:last-child {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scaleY(0.72);
+    opacity: 0.42;
+  }
+  50% {
+    transform: scaleY(1.06);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 900px) {
+  .experience-frame {
+    display: grid;
+    grid-template-columns: minmax(420px, 1.05fr) minmax(460px, 0.95fr);
+    min-height: 780px;
+  }
+
+  .media-stage {
+    min-height: 780px;
+    padding: 28px;
+  }
+
+  .hero-copy {
+    min-height: 470px;
+    max-width: 380px;
+  }
+
+  .telemetry-stage {
+    border-top: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 28px;
+  }
+
+  .telemetry-stage__header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .telemetry-stage__header h2 {
+    font-size: 34px;
+  }
+
+  .track-panel {
+    min-height: 370px;
+  }
+
+  .telemetry-hud {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
