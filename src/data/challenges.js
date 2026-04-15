@@ -1,20 +1,3 @@
-export const rawChallenges = [
-  {
-    id: 'austria-pole-onboard-2025',
-    title: 'Red Bull Ring Opening Minute',
-    audioSrc: '/audio/austria-pole-onboard-2025.mp3',
-    clipDurationMs: 60000,
-    durationLabel: '00:01:00',
-    trackName: 'Red Bull Ring',
-    trackCountry: 'Austria',
-    driverName: 'Lando Norris',
-    driverNumber: '4',
-    telemetrySource: 'OpenF1 official location + car_data',
-    trackVectorSource: 'Wikimedia Commons reference SVG',
-    circuitSvgPath:
-      'M54 237C53 213 58 189 69 166C84 135 110 110 142 87C173 64 205 51 238 43C267 36 299 34 324 42C343 49 357 62 360 79C362 95 356 112 348 127C338 145 324 160 315 176C307 190 302 203 307 215C313 229 329 233 345 232C368 230 392 220 417 203C446 182 467 157 482 129C496 102 504 74 503 49C502 28 493 11 475 5C456 -1 432 6 406 20C375 37 348 65 330 95C316 118 301 141 279 162C258 182 232 197 202 209C177 220 146 231 119 243C96 254 76 272 66 294C57 313 57 334 67 349C79 365 101 372 128 371C159 370 189 358 213 340C235 323 251 298 267 273C283 247 305 226 333 215C359 204 389 203 418 210C446 216 469 228 490 246',
-    prompt:
-      'The opening minute mixes a hard launch, a long uphill acceleration, and a handful of heavy braking points. It feels more like a compact power circuit than a flowing medium-speed complex.',
-    options: ['Red Bull Ring', 'Silverstone', 'Suzuka', 'Monza']
-  }
-];
+import challengeLibrary from './challenge-library.json';
+
+export const rawChallenges = challengeLibrary;
