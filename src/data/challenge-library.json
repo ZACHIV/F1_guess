@@ -56,7 +56,32 @@
     "prompt": "",
     "options": [],
     "createdAt": "2026-04-16T07:25:11.725Z",
-    "updatedAt": "2026-04-16T07:48:56.233Z",
+    "updatedAt": "2026-04-16T08:19:11.084Z",
     "sortOrder": 1
+  },
+  {
+    "id": "united-states-quali-max-verstappen-2025",
+    "title": "Max Verstappen's Pole Lap | 2025 United States Grand Prix | Pirelli",
+    "category": "Uncategorized",
+    "status": "draft",
+    "tags": [],
+    "notes": "",
+    "audioSrc": "/audio/united-states-quali-max-verstappen-2025.mp3",
+    "clipDurationMs": 123000,
+    "durationLabel": "00:02:03",
+    "trackName": "Circuit of the Americas",
+    "trackCountry": "United States",
+    "driverName": "Max Verstappen",
+    "driverNumber": "1",
+    "telemetrySource": "OpenF1 官方 location + car_data",
+    "trackVectorSource": "F1DB 本地赛道 SVG · Americas · austin-1",
+    "trackSvgSrc": "/assets/tracks/track-asset.svg",
+    "telemetryLocationSrc": "/telemetry/united-states-quali-max-verstappen-2025.location.json",
+    "telemetryCarDataSrc": "/telemetry/united-states-quali-max-verstappen-2025.car-data.json",
+    "prompt": "",
+    "options": [],
+    "createdAt": "2026-04-16T08:21:37.270Z",
+    "updatedAt": "2026-04-16T08:21:37.270Z",
+    "sortOrder": 2
   }
 ]

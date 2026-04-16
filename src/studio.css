@@ -91,6 +91,8 @@ button:disabled {
 .studio-header__actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 12px;
 }
 
@@ -477,6 +479,16 @@ button:disabled {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 18px;
+}
+
+.inline-note {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  padding: 14px 16px;
+  line-height: 1.6;
 }
 
 .primary,

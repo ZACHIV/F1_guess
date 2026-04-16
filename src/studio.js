@@ -70,6 +70,26 @@ const state = {
   activity: []
 };
 
+function getLapStats() {
+  if (!state.laps.length) {
+    return {
+      fastestLap: null,
+      maxLapNumber: ''
+    };
+  }
+
+  const fastestLap = [...state.laps]
+    .filter((lap) => lap.lap_duration !== null)
+    .sort((left, right) => Number(left.lap_duration) - Number(right.lap_duration))[0] ?? null;
+
+  const maxLapNumber = state.laps.reduce((max, lap) => Math.max(max, Number(lap.lap_number) || 0), 0);
+
+  return {
+    fastestLap,
+    maxLapNumber: maxLapNumber ? String(maxLapNumber) : ''
+  };
+}
+
 function formatDurationLabel(durationMs) {
   const totalSeconds = Math.floor(durationMs / 1000);
   const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
@@ -350,9 +370,30 @@ async function resolveSessionKeyForTelemetry() {
   return state.form.sessionKey;
 }
 
+async function resolveLapsForTelemetry() {
+  const sessionKey = await resolveSessionKeyForTelemetry();
+  requireValue(state.draft.driverNumber, '请先填写车手号码。');
+
+  const laps = await request(
+    `/api/studio/openf1/laps?sessionKey=${encodeURIComponent(sessionKey)}&driverNumber=${encodeURIComponent(state.draft.driverNumber)}`
+  );
+
+  state.laps = Array.isArray(laps)
+    ? laps
+        .filter((lap) => lap.lap_duration !== null)
+        .sort((left, right) => Number(left.lap_number) - Number(right.lap_number))
+    : [];
+
+  if (!state.laps.length) {
+    throw new Error('没有找到这个车手的有效圈速数据。');
+  }
+
+  return state.laps;
+}
+
 function render() {
   const filteredChallenges = getFilteredChallenges();
-  const selectedChallengeIndex = getSelectedChallengeIndex();
+  const lapStats = getLapStats();
 
   app.innerHTML = `
     <main class="studio-shell">
@@ -363,6 +404,9 @@ function render() {
           <p class="studio-subtitle">从网址提整段音频，到赛道 SVG、OpenF1 遥测数据、题目保存，全部集中在这里。</p>
         </div>
         <div class="studio-header__actions">
+          <button class="primary" type="button" id="save-btn" ${state.busy ? 'disabled' : ''}>保存题目</button>
+          <button class="secondary" type="button" id="duplicate-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>复制题目</button>
+          <button class="danger" type="button" id="delete-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>删除题目</button>
           <a class="studio-link" href="/" target="_blank" rel="noreferrer">打开前台预览</a>
         </div>
       </header>
@@ -507,7 +551,7 @@ function render() {
 
           <article class="studio-card">
             <p class="eyebrow">步骤二</p>
-            <h2>大模型校对</h2>
+            <h2>大模型校对与基础字段</h2>
             <div class="form-grid">
               <label class="field field--full">
                 <span>提示词</span>
@@ -516,30 +560,6 @@ function render() {
               <label class="field field--full">
                 <span>大模型返回结果</span>
                 <textarea id="ai-response" class="prompt-textarea" placeholder='把大模型返回的 JSON 直接粘贴到这里'>${escapeHtml(state.form.aiResponse)}</textarea>
-              </label>
-            </div>
-            <div class="actions">
-              <button class="secondary" type="button" id="generate-prompt-btn" ${state.busy ? 'disabled' : ''}>生成提示词</button>
-              <button class="secondary" type="button" id="copy-prompt-btn" ${state.busy ? 'disabled' : ''}>复制提示词</button>
-              <button class="primary" type="button" id="apply-ai-btn" ${state.busy ? 'disabled' : ''}>应用返回结果</button>
-            </div>
-          </article>
-
-          <article class="studio-card">
-            <p class="eyebrow">步骤三</p>
-            <h2>题目编辑与管理</h2>
-            <div class="form-grid">
-              <label class="field">
-                <span>分类</span>
-                <input id="draft-category" value="${escapeHtml(state.draft.category)}" placeholder="Qualifying / Pole / Onboard" />
-              </label>
-              <label class="field">
-                <span>状态</span>
-                <select id="draft-status">
-                  <option value="draft" ${state.draft.status === 'draft' ? 'selected' : ''}>draft</option>
-                  <option value="ready" ${state.draft.status === 'ready' ? 'selected' : ''}>ready</option>
-                  <option value="archived" ${state.draft.status === 'archived' ? 'selected' : ''}>archived</option>
-                </select>
               </label>
               <label class="field">
                 <span>赛道名</span>
@@ -557,37 +577,24 @@ function render() {
                 <span>车手号码</span>
                 <input id="draft-driver-number" value="${escapeHtml(state.draft.driverNumber)}" />
               </label>
-              <label class="field field--full">
-                <span>标签</span>
-                <input id="draft-tags" value="${escapeHtml(renderOptions(state.draft.tags))}" placeholder="pole, onboard, wet, mclaren" />
+              <label class="field">
+                <span>年份</span>
+                <input id="year" value="${escapeHtml(state.form.year)}" />
               </label>
-              <label class="field field--full">
-                <span>选项</span>
-                <input id="draft-options" value="${escapeHtml(renderOptions(state.draft.options))}" placeholder="Red Bull Ring, Monza, Suzuka, Spa" />
+              <label class="field">
+                <span>场次名称</span>
+                <input id="session-name" value="${escapeHtml(state.form.sessionName)}" />
               </label>
-              <label class="field field--full">
-                <span>管理备注</span>
-                <textarea id="draft-notes">${escapeHtml(state.draft.notes)}</textarea>
-              </label>
-              <label class="field field--full">
-                <span>提示文案</span>
-                <textarea id="draft-prompt">${escapeHtml(state.draft.prompt)}</textarea>
-              </label>
-            </div>
-            <div class="draft-meta-row">
-              <span>创建时间：${escapeHtml(state.draft.createdAt || '未保存')}</span>
-              <span>更新时间：${escapeHtml(state.draft.updatedAt || '未保存')}</span>
-              <span>手动排序：${selectedChallengeIndex === -1 ? '-' : String(selectedChallengeIndex + 1)}</span>
             </div>
             <div class="actions">
-              <button class="primary" type="button" id="save-btn" ${state.busy ? 'disabled' : ''}>保存题目</button>
-              <button class="secondary" type="button" id="duplicate-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>复制题目</button>
-              <button class="danger" type="button" id="delete-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>删除题目</button>
+              <button class="secondary" type="button" id="generate-prompt-btn" ${state.busy ? 'disabled' : ''}>生成提示词</button>
+              <button class="secondary" type="button" id="copy-prompt-btn" ${state.busy ? 'disabled' : ''}>复制提示词</button>
+              <button class="primary" type="button" id="apply-ai-btn" ${state.busy ? 'disabled' : ''}>应用返回结果</button>
             </div>
           </article>
 
           <article class="studio-card">
-            <p class="eyebrow">步骤四</p>
+            <p class="eyebrow">步骤三</p>
             <h2>赛道 SVG 与遥测数据</h2>
             <div class="form-grid">
               <label class="field">
@@ -599,20 +606,20 @@ function render() {
                 <input id="track-query" value="${escapeHtml(state.form.trackQuery || state.draft.trackName)}" placeholder="Red Bull Ring / Spielberg / A1-Ring" />
               </label>
               <label class="field">
-                <span>年份</span>
-                <input id="year" value="${escapeHtml(state.form.year)}" />
-              </label>
-              <label class="field">
-                <span>场次名称</span>
-                <input id="session-name" value="${escapeHtml(state.form.sessionName)}" />
-              </label>
-              <label class="field">
                 <span>场次 Key</span>
                 <input id="session-key" value="${escapeHtml(state.form.sessionKey)}" placeholder="9951" />
               </label>
               <label class="field">
                 <span>圈数</span>
-                <input id="lap-number" value="${escapeHtml(state.form.lapNumber)}" placeholder="17" />
+                <input id="lap-number" value="${escapeHtml(state.form.lapNumber)}" placeholder="${lapStats.fastestLap ? `默认最快圈 ${lapStats.fastestLap.lap_number}` : '留空则自动选最快圈'}" ${lapStats.maxLapNumber ? `max="${escapeHtml(lapStats.maxLapNumber)}"` : ''} />
+              </label>
+              <label class="field field--full">
+                <span>圈速策略</span>
+                <div class="inline-note">
+                  ${lapStats.fastestLap
+                    ? `当前已识别有效圈 ${state.laps.length} 条，最快圈为第 ${escapeHtml(lapStats.fastestLap.lap_number)} 圈 (${escapeHtml(lapStats.fastestLap.lap_duration)} 秒)，可手动改到 1-${escapeHtml(lapStats.maxLapNumber)}。`
+                    : '若圈数留空，导入遥测时会自动查询该车手所有有效圈并默认选择最快单圈。'}
+                </div>
               </label>
             </div>
             <div class="actions">
@@ -621,7 +628,6 @@ function render() {
             </div>
             <div class="result-stack">
               ${renderTrackPreview()}
-              ${renderResultSection('场次匹配', state.sessions, (item) => `<strong>场次 ${escapeHtml(item.session_key)}</strong><span>${escapeHtml(item.country_name)} · ${escapeHtml(item.session_name)}</span>`)}
             </div>
           </article>
 
@@ -683,7 +689,6 @@ function bindEvents() {
       trackAsset: ''
     };
     state.sessions = [];
-    state.drivers = [];
     state.laps = [];
     setStatus('已创建新的空白草稿。', 'success');
     pushActivity('已创建新的空白草稿。', 'success');
@@ -698,6 +703,7 @@ function bindEvents() {
       state.selectedId = id;
       state.draft = structuredClone(challenge);
       state.form.trackAsset = challenge.id;
+      state.laps = [];
       setStatus(`已载入题目：${challenge.title || challenge.id}`, 'success');
       pushActivity(`已载入题目：${challenge.title || challenge.id}`, 'success');
       render();
@@ -798,6 +804,7 @@ function bindEvents() {
       state.form.sessionKey = payload.parsed.sessionKey || '';
       state.form.lapNumber = payload.parsed.lapNumber || '';
       state.form.trackAsset = state.form.trackAsset || state.draft.id;
+      state.laps = [];
 
       const unresolvedLabel = payload.parsed.unresolvedFields.length
         ? `未识别字段：${payload.parsed.unresolvedFields.join(', ')}`
@@ -862,6 +869,7 @@ function bindEvents() {
       state.form.sessionKey = parsed.sessionKey;
       state.form.lapNumber = parsed.lapNumber;
       state.form.trackAsset = state.form.trackAsset || state.draft.id;
+      state.laps = [];
 
       const unresolvedLabel = parsed.unresolvedFields.length
         ? `仍待确认：${parsed.unresolvedFields.join(', ')}`
@@ -949,22 +957,35 @@ function bindEvents() {
     runAction('正在导入遥测数据...', async () => {
       requireValue(state.draft.id, '导入遥测数据前请先填写题目 ID / slug。');
       requireValue(state.draft.driverNumber, '请先填写车手号码。');
-      requireValue(state.form.lapNumber, '请先填写圈数。');
-      const sessionKey = await resolveSessionKeyForTelemetry();
+      const laps = await resolveLapsForTelemetry();
+      const sessionKey = state.form.sessionKey;
+      const fastestLap = [...laps].sort((left, right) => Number(left.lap_duration) - Number(right.lap_duration))[0];
+      const selectedLapNumber = state.form.lapNumber || String(fastestLap?.lap_number ?? '');
+
+      if (!selectedLapNumber) {
+        throw new Error('没有找到可用于导入的有效圈速。');
+      }
+
+      const selectedLap = laps.find((lap) => String(lap.lap_number) === String(selectedLapNumber));
+      if (!selectedLap) {
+        throw new Error(`第 ${selectedLapNumber} 圈不在当前有效圈范围内，请改为 1-${getLapStats().maxLapNumber}。`);
+      }
+
+      state.form.lapNumber = selectedLapNumber;
       const payload = await request('/api/studio/openf1/import', {
         method: 'POST',
         body: JSON.stringify({
           slug: state.draft.id,
           sessionKey,
           driverNumber: state.draft.driverNumber,
-          lapNumber: state.form.lapNumber
+          lapNumber: selectedLapNumber
         })
       });
       state.draft.telemetryLocationSrc = payload.telemetryLocationSrc;
       state.draft.telemetryCarDataSrc = payload.telemetryCarDataSrc;
       state.draft.telemetrySource = 'OpenF1 官方 location + car_data';
-      setStatus(`遥测数据导入完成：场次 ${sessionKey}，第 ${state.form.lapNumber} 圈，${payload.locationPoints} 个位置点，${payload.carSamples} 个车辆数据点。`, 'success');
-      pushActivity(`遥测已导入：场次 ${sessionKey} · 第 ${state.form.lapNumber} 圈`, 'success');
+      setStatus(`遥测数据导入完成：场次 ${sessionKey}，第 ${selectedLapNumber} 圈，${payload.locationPoints} 个位置点，${payload.carSamples} 个车辆数据点。`, 'success');
+      pushActivity(`遥测已导入：场次 ${sessionKey} · 第 ${selectedLapNumber} 圈`, 'success');
     });
   });
 }
