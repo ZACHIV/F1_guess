@@ -9,6 +9,10 @@ const app = document.querySelector('#app');
 const emptyDraft = () => ({
   id: '',
   title: '',
+  category: 'Uncategorized',
+  status: 'draft',
+  tags: [],
+  notes: '',
   audioSrc: '',
   clipDurationMs: 0,
   durationLabel: '',
@@ -22,10 +26,17 @@ const emptyDraft = () => ({
   telemetryLocationSrc: '',
   telemetryCarDataSrc: '',
   prompt: '',
-  options: []
+  options: [],
+  createdAt: '',
+  updatedAt: '',
+  sortOrder: 0
 });
 
 const defaultFormState = () => ({
+  librarySearch: '',
+  categoryFilter: 'all',
+  statusFilter: 'all',
+  librarySort: 'manual',
   videoUrl: '',
   videoTitle: '',
   videoDescription: '',
@@ -41,6 +52,11 @@ const defaultFormState = () => ({
 
 const state = {
   challenges: [],
+  librarySummary: {
+    total: 0,
+    categories: [],
+    statuses: []
+  },
   selectedId: '',
   draft: emptyDraft(),
   form: defaultFormState(),
@@ -89,10 +105,16 @@ async function request(path, options = {}) {
 }
 
 async function loadLibrary() {
-  state.challenges = await request('/api/studio/library');
+  const payload = await request('/api/studio/library');
+  state.challenges = payload.records;
+  state.librarySummary = payload.summary;
 
   if (!state.selectedId && state.challenges.length) {
     state.selectedId = state.challenges[0].id;
+  }
+
+  if (state.selectedId && !state.challenges.some((item) => item.id === state.selectedId)) {
+    state.selectedId = state.challenges[0]?.id ?? '';
   }
 
   if (state.selectedId) {
@@ -119,9 +141,66 @@ function pushActivity(message, tone = 'neutral') {
   state.activity = [{ message, tone, time }, ...state.activity].slice(0, 6);
 }
 
+function getFilteredChallenges() {
+  const searchTerm = state.form.librarySearch.trim().toLowerCase();
+
+  const filtered = state.challenges.filter((challenge) => {
+    const matchesSearch = !searchTerm || [
+      challenge.id,
+      challenge.title,
+      challenge.trackName,
+      challenge.trackCountry,
+      challenge.driverName,
+      challenge.category,
+      ...(Array.isArray(challenge.tags) ? challenge.tags : [])
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(searchTerm);
+
+    const matchesCategory = state.form.categoryFilter === 'all' || challenge.category === state.form.categoryFilter;
+    const matchesStatus = state.form.statusFilter === 'all' || challenge.status === state.form.statusFilter;
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  if (state.form.librarySort === 'updated-desc') {
+    return [...filtered].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }
+
+  if (state.form.librarySort === 'created-desc') {
+    return [...filtered].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  if (state.form.librarySort === 'title-asc') {
+    return [...filtered].sort((left, right) => left.title.localeCompare(right.title, 'en'));
+  }
+
+  if (state.form.librarySort === 'category-asc') {
+    return [...filtered].sort((left, right) =>
+      left.category.localeCompare(right.category, 'en') ||
+      left.title.localeCompare(right.title, 'en')
+    );
+  }
+
+  return [...filtered].sort((left, right) => left.sortOrder - right.sortOrder);
+}
+
+function getSelectedChallengeIndex() {
+  return state.challenges.findIndex((item) => item.id === state.selectedId);
+}
+
 function syncDraftFromForm() {
   state.draft.id = document.querySelector('#draft-id')?.value.trim() ?? state.draft.id;
   state.draft.title = document.querySelector('#draft-title')?.value.trim() ?? state.draft.title;
+  state.draft.category = document.querySelector('#draft-category')?.value.trim() ?? state.draft.category;
+  state.draft.status = document.querySelector('#draft-status')?.value.trim() ?? state.draft.status;
+  state.draft.tags = (document.querySelector('#draft-tags')?.value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  state.draft.notes = document.querySelector('#draft-notes')?.value.trim() ?? state.draft.notes;
   state.draft.trackName = document.querySelector('#draft-track-name')?.value.trim() ?? state.draft.trackName;
   state.draft.trackCountry = document.querySelector('#draft-track-country')?.value.trim() ?? state.draft.trackCountry;
   state.draft.driverName = document.querySelector('#draft-driver-name')?.value.trim() ?? state.draft.driverName;
@@ -134,6 +213,10 @@ function syncDraftFromForm() {
 }
 
 function syncFormState() {
+  state.form.librarySearch = document.querySelector('#library-search')?.value ?? state.form.librarySearch;
+  state.form.categoryFilter = document.querySelector('#category-filter')?.value ?? state.form.categoryFilter;
+  state.form.statusFilter = document.querySelector('#status-filter')?.value ?? state.form.statusFilter;
+  state.form.librarySort = document.querySelector('#library-sort')?.value ?? state.form.librarySort;
   state.form.videoUrl = document.querySelector('#video-url')?.value.trim() ?? state.form.videoUrl;
   state.form.videoTitle = document.querySelector('#video-title')?.value.trim() ?? state.form.videoTitle;
   state.form.videoDescription = document.querySelector('#video-description')?.value.trim() ?? state.form.videoDescription;
@@ -179,6 +262,14 @@ function friendlyErrorMessage(message) {
     return '音频时长探测失败，请确认 FFmpeg / ffprobe 已正确安装。';
   }
 
+  if (message.includes('Duplicate challenge id already exists')) {
+    return '复制失败：新的题目 ID 已存在。';
+  }
+
+  if (message.includes('Source challenge not found')) {
+    return '复制失败：没有找到要复制的题目。';
+  }
+
   return message || '发生了未知错误。';
 }
 
@@ -204,6 +295,9 @@ function renderResultSection(title, items, labelBuilder) {
 }
 
 function render() {
+  const filteredChallenges = getFilteredChallenges();
+  const selectedChallengeIndex = getSelectedChallengeIndex();
+
   app.innerHTML = `
     <main class="studio-shell">
       <header class="studio-header">
@@ -222,21 +316,73 @@ function render() {
           <div class="panel-title-row">
             <div>
               <p class="eyebrow">题库</p>
-              <h2>当前题目</h2>
+              <h2>本地题库</h2>
             </div>
             <button class="secondary" type="button" id="new-btn" ${state.busy ? 'disabled' : ''}>新建题目</button>
           </div>
+          <div class="library-stats">
+            <div class="library-stat"><strong>${state.librarySummary.total}</strong><span>总题目</span></div>
+            <div class="library-stat"><strong>${state.librarySummary.categories.length}</strong><span>分类</span></div>
+            <div class="library-stat"><strong>${state.librarySummary.statuses.length}</strong><span>状态</span></div>
+          </div>
+          <div class="form-grid library-filters">
+            <label class="field field--full">
+              <span>搜索</span>
+              <input id="library-search" value="${escapeHtml(state.form.librarySearch)}" placeholder="标题 / 赛道 / 车手 / 标签" />
+            </label>
+            <label class="field">
+              <span>分类筛选</span>
+              <select id="category-filter">
+                <option value="all" ${state.form.categoryFilter === 'all' ? 'selected' : ''}>全部分类</option>
+                ${state.librarySummary.categories
+                  .map((category) => `<option value="${escapeHtml(category)}" ${state.form.categoryFilter === category ? 'selected' : ''}>${escapeHtml(category)}</option>`)
+                  .join('')}
+              </select>
+            </label>
+            <label class="field">
+              <span>状态筛选</span>
+              <select id="status-filter">
+                <option value="all" ${state.form.statusFilter === 'all' ? 'selected' : ''}>全部状态</option>
+                ${state.librarySummary.statuses
+                  .map((status) => `<option value="${escapeHtml(status)}" ${state.form.statusFilter === status ? 'selected' : ''}>${escapeHtml(status)}</option>`)
+                  .join('')}
+              </select>
+            </label>
+            <label class="field field--full">
+              <span>排序方式</span>
+              <select id="library-sort">
+                <option value="manual" ${state.form.librarySort === 'manual' ? 'selected' : ''}>手动排序</option>
+                <option value="updated-desc" ${state.form.librarySort === 'updated-desc' ? 'selected' : ''}>最近更新优先</option>
+                <option value="created-desc" ${state.form.librarySort === 'created-desc' ? 'selected' : ''}>最近创建优先</option>
+                <option value="title-asc" ${state.form.librarySort === 'title-asc' ? 'selected' : ''}>标题 A-Z</option>
+                <option value="category-asc" ${state.form.librarySort === 'category-asc' ? 'selected' : ''}>分类 A-Z</option>
+              </select>
+            </label>
+          </div>
           <div class="library-list">
-            ${state.challenges
+            ${filteredChallenges.length
+              ? filteredChallenges
               .map(
                 (challenge) => `
-                  <button class="library-item ${challenge.id === state.selectedId ? 'is-active' : ''}" type="button" data-select-id="${challenge.id}">
-                    <strong>${escapeHtml(challenge.title || challenge.id)}</strong>
-                    <span>${escapeHtml(challenge.trackName || '未命名赛道')}</span>
-                  </button>
+                  <article class="library-item ${challenge.id === state.selectedId ? 'is-active' : ''}">
+                    <button class="library-item__main" type="button" data-select-id="${challenge.id}">
+                      <strong>${escapeHtml(challenge.title || challenge.id)}</strong>
+                      <span>${escapeHtml(challenge.trackName || '未命名赛道')} · ${escapeHtml(challenge.driverName || '未知车手')}</span>
+                      <div class="library-item__meta">
+                        <span class="mini-chip">${escapeHtml(challenge.category || 'Uncategorized')}</span>
+                        <span class="mini-chip is-status">${escapeHtml(challenge.status || 'draft')}</span>
+                      </div>
+                    </button>
+                    <div class="library-item__actions">
+                      <button class="ghost-btn" type="button" data-duplicate-id="${challenge.id}" ${state.busy ? 'disabled' : ''}>复制</button>
+                      <button class="ghost-btn" type="button" data-move-id="${challenge.id}" data-direction="up" ${state.busy || state.form.librarySort !== 'manual' ? 'disabled' : ''}>上移</button>
+                      <button class="ghost-btn" type="button" data-move-id="${challenge.id}" data-direction="down" ${state.busy || state.form.librarySort !== 'manual' ? 'disabled' : ''}>下移</button>
+                    </div>
+                  </article>
                 `
               )
-              .join('')}
+              .join('')
+              : '<div class="result-empty">当前筛选条件下没有题目</div>'}
           </div>
         </aside>
 
@@ -325,8 +471,20 @@ function render() {
 
           <article class="studio-card">
             <p class="eyebrow">步骤三</p>
-            <h2>赛道与题目编辑</h2>
+            <h2>题目编辑与管理</h2>
             <div class="form-grid">
+              <label class="field">
+                <span>分类</span>
+                <input id="draft-category" value="${escapeHtml(state.draft.category)}" placeholder="Qualifying / Pole / Onboard" />
+              </label>
+              <label class="field">
+                <span>状态</span>
+                <select id="draft-status">
+                  <option value="draft" ${state.draft.status === 'draft' ? 'selected' : ''}>draft</option>
+                  <option value="ready" ${state.draft.status === 'ready' ? 'selected' : ''}>ready</option>
+                  <option value="archived" ${state.draft.status === 'archived' ? 'selected' : ''}>archived</option>
+                </select>
+              </label>
               <label class="field">
                 <span>赛道名</span>
                 <input id="draft-track-name" value="${escapeHtml(state.draft.trackName)}" />
@@ -344,16 +502,30 @@ function render() {
                 <input id="draft-driver-number" value="${escapeHtml(state.draft.driverNumber)}" />
               </label>
               <label class="field field--full">
+                <span>标签</span>
+                <input id="draft-tags" value="${escapeHtml(renderOptions(state.draft.tags))}" placeholder="pole, onboard, wet, mclaren" />
+              </label>
+              <label class="field field--full">
                 <span>选项</span>
                 <input id="draft-options" value="${escapeHtml(renderOptions(state.draft.options))}" placeholder="Red Bull Ring, Monza, Suzuka, Spa" />
+              </label>
+              <label class="field field--full">
+                <span>管理备注</span>
+                <textarea id="draft-notes">${escapeHtml(state.draft.notes)}</textarea>
               </label>
               <label class="field field--full">
                 <span>提示文案</span>
                 <textarea id="draft-prompt">${escapeHtml(state.draft.prompt)}</textarea>
               </label>
             </div>
+            <div class="draft-meta-row">
+              <span>创建时间：${escapeHtml(state.draft.createdAt || '未保存')}</span>
+              <span>更新时间：${escapeHtml(state.draft.updatedAt || '未保存')}</span>
+              <span>手动排序：${selectedChallengeIndex === -1 ? '-' : String(selectedChallengeIndex + 1)}</span>
+            </div>
             <div class="actions">
               <button class="primary" type="button" id="save-btn" ${state.busy ? 'disabled' : ''}>保存题目</button>
+              <button class="secondary" type="button" id="duplicate-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>复制题目</button>
               <button class="danger" type="button" id="delete-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>删除题目</button>
             </div>
           </article>
@@ -439,10 +611,22 @@ async function runAction(message, fn) {
 }
 
 function bindEvents() {
+  ['#library-search', '#category-filter', '#status-filter', '#library-sort'].forEach((selector) => {
+    document.querySelector(selector)?.addEventListener('input', () => {
+      syncFormState();
+      render();
+    });
+    document.querySelector(selector)?.addEventListener('change', () => {
+      syncFormState();
+      render();
+    });
+  });
+
   document.querySelector('#new-btn')?.addEventListener('click', () => {
     state.selectedId = '';
     state.draft = emptyDraft();
     state.form = {
+      ...state.form,
       ...defaultFormState(),
       trackAsset: ''
     };
@@ -465,6 +649,52 @@ function bindEvents() {
       setStatus(`已载入题目：${challenge.title || challenge.id}`, 'success');
       pushActivity(`已载入题目：${challenge.title || challenge.id}`, 'success');
       render();
+    });
+  });
+
+  document.querySelectorAll('[data-duplicate-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const sourceId = button.getAttribute('data-duplicate-id');
+      const source = state.challenges.find((item) => item.id === sourceId);
+      if (!source) return;
+
+      const suggestedId = `${source.id}-copy`;
+      const newId = window.prompt('请输入复制后的题目 ID / slug', suggestedId);
+      if (!newId) return;
+
+      runAction('正在复制题目...', async () => {
+        await request('/api/studio/challenges/duplicate', {
+          method: 'POST',
+          body: JSON.stringify({
+            sourceId,
+            newId
+          })
+        });
+        state.selectedId = newId.trim();
+        await loadLibrary();
+        state.form.trackAsset = state.draft.id;
+        setStatus(`题目已复制：${newId.trim()}`, 'success');
+        pushActivity(`题目已复制：${newId.trim()}`, 'success');
+      });
+    });
+  });
+
+  document.querySelectorAll('[data-move-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.getAttribute('data-move-id');
+      const direction = button.getAttribute('data-direction');
+      if (!id || !direction) return;
+
+      runAction('正在调整题目排序...', async () => {
+        await request('/api/studio/challenges/reorder', {
+          method: 'POST',
+          body: JSON.stringify({ id, direction })
+        });
+        await loadLibrary();
+        state.selectedId = id;
+        setStatus(`题目排序已更新：${direction === 'up' ? '上移' : '下移'}`, 'success');
+        pushActivity(`题目排序已更新：${id}`, 'success');
+      });
     });
   });
 
@@ -601,6 +831,28 @@ function bindEvents() {
       state.selectedId = state.draft.id;
       setStatus(`题目已保存：${state.draft.title || state.draft.id}`, 'success');
       pushActivity(`题目已保存：${state.draft.title || state.draft.id}`, 'success');
+    });
+  });
+
+  document.querySelector('#duplicate-btn')?.addEventListener('click', () => {
+    if (!state.draft.id) return;
+    const suggestedId = `${state.draft.id}-copy`;
+    const newId = window.prompt('请输入复制后的题目 ID / slug', suggestedId);
+    if (!newId) return;
+
+    runAction('正在复制题目...', async () => {
+      await request('/api/studio/challenges/duplicate', {
+        method: 'POST',
+        body: JSON.stringify({
+          sourceId: state.draft.id,
+          newId
+        })
+      });
+      state.selectedId = newId.trim();
+      await loadLibrary();
+      state.form.trackAsset = state.draft.id;
+      setStatus(`题目已复制：${newId.trim()}`, 'success');
+      pushActivity(`题目已复制：${newId.trim()}`, 'success');
     });
   });
 

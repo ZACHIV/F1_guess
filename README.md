@@ -23,10 +23,11 @@ npm run dev
 - Studio workflow:
   1. Paste a source video URL, auto-parse title/description into qualifying metadata, then extract the full onboard audio
   2. Generate a ready-to-copy LLM prompt, paste the model's JSON reply back into Studio, and apply the reviewed metadata
-  3. Import a track SVG from the local `submodule/f1db` circuit library
-  4. Look up OpenF1 sessions, drivers, and laps
-  5. Import telemetry for a chosen lap
-  6. Save the challenge into `src/data/challenge-library.json`
+  3. Manage the local challenge library with category, status, tags, search, sorting, duplication, reordering, and deletion
+  4. Import a track SVG from the local `submodule/f1db` circuit library
+  5. Look up OpenF1 sessions, drivers, and laps
+  6. Import telemetry for a chosen lap
+  7. Save the challenge into `src/data/challenge-library.json`
 
 To refresh the local mirror on another machine:
 ```bash

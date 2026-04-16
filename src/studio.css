@@ -38,7 +38,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -183,13 +184,19 @@ button:disabled {
 }
 
 .library-item {
-  width: 100%;
-  padding: 16px 16px 15px;
   border-radius: 18px;
   border: 1px solid transparent;
   background: var(--panel-muted);
+  overflow: hidden;
+}
+
+.library-item__main {
+  width: 100%;
+  padding: 16px 16px 12px;
   color: var(--text);
   text-align: left;
+  background: transparent;
+  border: 0;
   cursor: pointer;
 }
 
@@ -215,6 +222,75 @@ button:disabled {
     linear-gradient(135deg, rgba(255, 106, 0, 0.18), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.05);
   box-shadow: 0 18px 32px rgba(255, 106, 0, 0.12);
+}
+
+.library-item__meta,
+.library-item__actions,
+.library-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.library-item__meta {
+  margin-top: 10px;
+}
+
+.library-item__actions {
+  padding: 0 16px 14px;
+}
+
+.library-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.library-stat {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.library-stat strong {
+  display: block;
+  font-size: 1.1rem;
+}
+
+.library-stat span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.library-filters {
+  margin-top: 16px;
+}
+
+.mini-chip,
+.ghost-btn {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.mini-chip {
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.mini-chip.is-status {
+  color: #ffd18c;
+}
+
+.ghost-btn {
+  padding: 8px 11px;
+  cursor: pointer;
 }
 
 .studio-card {
@@ -372,7 +448,8 @@ button:disabled {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   border-radius: 18px;
   border: 1px solid var(--line);
@@ -383,7 +460,8 @@ button:disabled {
 }
 
 .field input:focus,
-.field textarea:focus {
+.field textarea:focus,
+.field select:focus {
   border-color: rgba(255, 106, 0, 0.72);
   box-shadow: 0 0 0 4px rgba(255, 106, 0, 0.12);
 }
@@ -493,6 +571,15 @@ button:disabled {
   min-height: 220px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
+}
+
+.draft-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 @keyframes studio-progress {

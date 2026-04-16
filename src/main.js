@@ -28,7 +28,8 @@ async function loadChallengeLibrary() {
       throw new Error('load failed');
     }
 
-    return await response.json();
+    const payload = await response.json();
+    return Array.isArray(payload) ? payload : payload.records;
   } catch {
     return fallbackChallenges;
   }

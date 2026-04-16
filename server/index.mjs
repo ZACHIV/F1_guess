@@ -10,8 +10,12 @@ import {
 } from './lib/extract-workflow.mjs';
 import { importLocalCircuitSvg } from './lib/f1db-local.mjs';
 import {
+  duplicateChallengeRecord,
+  getChallengeLibrarySummary,
+  moveChallengeRecord,
   readChallengeLibrary,
   removeChallengeRecord,
+  sortChallengeRecords,
   upsertChallengeRecord,
   writeChallengeLibrary
 } from './lib/challenge-library.mjs';
@@ -116,7 +120,11 @@ app.get('/api/health', (_request, response) => {
 
 app.get('/api/studio/library', async (_request, response, next) => {
   try {
-    response.json(await readChallengeLibrary(challengeLibraryPath));
+    const records = await readChallengeLibrary(challengeLibraryPath);
+    response.json({
+      records,
+      summary: getChallengeLibrarySummary(records)
+    });
   } catch (error) {
     next(error);
   }
@@ -292,7 +300,42 @@ app.post('/api/studio/challenges', async (request, response, next) => {
 
     response.json({
       ok: true,
-      total: updated.length
+      total: updated.length,
+      summary: getChallengeLibrarySummary(updated)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/studio/challenges/duplicate', async (request, response, next) => {
+  try {
+    const existing = await readChallengeLibrary(challengeLibraryPath);
+    const updated = duplicateChallengeRecord(existing, request.body.sourceId, request.body.newId);
+
+    await writeChallengeLibrary(challengeLibraryPath, updated);
+
+    response.json({
+      ok: true,
+      total: updated.length,
+      summary: getChallengeLibrarySummary(updated)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/studio/challenges/reorder', async (request, response, next) => {
+  try {
+    const existing = await readChallengeLibrary(challengeLibraryPath);
+    const updated = moveChallengeRecord(existing, request.body.id, request.body.direction);
+
+    await writeChallengeLibrary(challengeLibraryPath, updated);
+
+    response.json({
+      ok: true,
+      total: updated.length,
+      records: sortChallengeRecords(updated, 'manual')
     });
   } catch (error) {
     next(error);
