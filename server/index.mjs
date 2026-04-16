@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
 import { buildExtractionCommands, getWorkflowMediaPaths } from './lib/extract-workflow.mjs';
+import { importLocalCircuitSvg } from './lib/f1db-local.mjs';
 import {
   readChallengeLibrary,
   removeChallengeRecord,
@@ -115,24 +116,18 @@ app.post('/api/studio/extract', async (request, response, next) => {
   }
 });
 
-app.post('/api/studio/tracks/download', async (request, response, next) => {
+app.post('/api/studio/tracks/import-local', async (request, response, next) => {
   try {
-    const { assetName, url } = request.body;
+    const { assetName, query } = request.body;
     const targetDir = resolve(root, 'public/assets/tracks');
-    const targetPath = resolve(targetDir, `${assetName}.svg`);
 
     await ensureDir(targetDir);
 
-    const assetResponse = await fetch(url);
-    if (!assetResponse.ok) {
-      throw new Error(`Track asset request failed: ${assetResponse.status}`);
-    }
-
-    await writeFile(targetPath, await assetResponse.text(), 'utf8');
+    const result = await importLocalCircuitSvg(root, { assetName, query });
 
     response.json({
       ok: true,
-      trackSvgSrc: `/assets/tracks/${assetName}.svg`
+      ...result
     });
   } catch (error) {
     next(error);

@@ -11,18 +11,26 @@ Mobile-first single-screen prototype for guessing an F1 circuit from onboard eng
 ## Run the app
 ```bash
 npm install
+npm run setup:f1db
 npm run dev
 ```
 
 ## Internal Studio
 - Open the content workflow at `/studio.html`
 - `npm run dev` starts both the local Studio API and the Vite frontend
+- Put the full `f1db` repository at `submodule/f1db`
+- If `submodule/f1db` is missing, run `npm run setup:f1db`
 - Studio workflow:
   1. Paste a source video URL and extract the full onboard audio
-  2. Download a track SVG from an open-source URL
+  2. Import a track SVG from the local `submodule/f1db` circuit library
   3. Look up OpenF1 sessions, drivers, and laps
   4. Import telemetry for a chosen lap
   5. Save the challenge into `src/data/challenge-library.json`
+
+To refresh the local mirror on another machine:
+```bash
+node scripts/setup-f1db.mjs --refresh
+```
 
 ## Add a real clip
 1. Install local tools:

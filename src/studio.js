@@ -24,7 +24,7 @@ const emptyDraft = () => ({
 const defaultFormState = () => ({
   videoUrl: '',
   trackAsset: '',
-  trackUrl: '',
+  trackQuery: '',
   year: '2025',
   sessionName: 'Qualifying',
   sessionKey: '',
@@ -128,7 +128,7 @@ function syncDraftFromForm() {
 function syncFormState() {
   state.form.videoUrl = document.querySelector('#video-url')?.value.trim() ?? state.form.videoUrl;
   state.form.trackAsset = document.querySelector('#track-asset')?.value.trim() ?? state.form.trackAsset;
-  state.form.trackUrl = document.querySelector('#track-url')?.value.trim() ?? state.form.trackUrl;
+  state.form.trackQuery = document.querySelector('#track-query')?.value.trim() ?? state.form.trackQuery;
   state.form.year = document.querySelector('#year')?.value.trim() ?? state.form.year;
   state.form.sessionName = document.querySelector('#session-name')?.value.trim() ?? state.form.sessionName;
   state.form.sessionKey = document.querySelector('#session-key')?.value.trim() ?? state.form.sessionKey;
@@ -151,8 +151,16 @@ function friendlyErrorMessage(message) {
     return '没有找到符合条件的有效圈速，请确认场次 Key、车手号码和圈数是否正确。';
   }
 
-  if (message.includes('Track asset request failed')) {
-    return '赛道 SVG 下载失败，远程地址不可用或响应异常。';
+  if (message.includes('F1DB circuit not found')) {
+    return '本地 f1db 里没有找到对应赛道，请检查赛道名或换一个别名再试。';
+  }
+
+  if (message.includes('F1DB SVG asset is missing')) {
+    return '本地 f1db 资源不完整，缺少对应的赛道 SVG 文件。';
+  }
+
+  if (message.includes('F1DB local repository is missing')) {
+    return '没有找到本地 f1db 仓库，请确认它位于 submodule/f1db。';
   }
 
   if (message.includes('ffprobe failed')) {
@@ -318,8 +326,8 @@ function render() {
                 <input id="track-asset" value="${escapeHtml(state.form.trackAsset || state.draft.id || 'track-asset')}" />
               </label>
               <label class="field">
-                <span>赛道 SVG 地址</span>
-                <input id="track-url" value="${escapeHtml(state.form.trackUrl)}" placeholder="https://commons.wikimedia.org/wiki/Special:FilePath/..." />
+                <span>本地检索关键词</span>
+                <input id="track-query" value="${escapeHtml(state.form.trackQuery || state.draft.trackName)}" placeholder="Red Bull Ring / Spielberg / A1-Ring" />
               </label>
               <label class="field">
                 <span>年份</span>
@@ -339,7 +347,7 @@ function render() {
               </label>
             </div>
             <div class="actions">
-              <button class="secondary" type="button" id="track-btn" ${state.busy ? 'disabled' : ''}>下载赛道 SVG</button>
+              <button class="secondary" type="button" id="track-btn" ${state.busy ? 'disabled' : ''}>从本地导入赛道 SVG</button>
               <button class="secondary" type="button" id="sessions-btn" ${state.busy ? 'disabled' : ''}>查询场次</button>
               <button class="secondary" type="button" id="drivers-btn" ${state.busy ? 'disabled' : ''}>查询车手</button>
               <button class="secondary" type="button" id="laps-btn" ${state.busy ? 'disabled' : ''}>查询圈速</button>
@@ -475,20 +483,20 @@ function bindEvents() {
   });
 
   document.querySelector('#track-btn')?.addEventListener('click', () => {
-    runAction('正在下载赛道 SVG...', async () => {
+    runAction('正在从本地 f1db 导入赛道 SVG...', async () => {
       requireValue(state.form.trackAsset || state.draft.id, '请先填写赛道 SVG 文件名。');
-      requireValue(state.form.trackUrl, '请先填写赛道 SVG 地址。');
-      const payload = await request('/api/studio/tracks/download', {
+      requireValue(state.form.trackQuery || state.draft.trackName, '请先填写赛道名或本地检索关键词。');
+      const payload = await request('/api/studio/tracks/import-local', {
         method: 'POST',
         body: JSON.stringify({
           assetName: state.form.trackAsset || state.draft.id,
-          url: state.form.trackUrl
+          query: state.form.trackQuery || state.draft.trackName
         })
       });
       state.draft.trackSvgSrc = payload.trackSvgSrc;
-      state.draft.trackVectorSource = '开发者后台导入 SVG';
-      setStatus(`赛道 SVG 已下载：${payload.trackSvgSrc}`, 'success');
-      pushActivity(`赛道 SVG 已下载：${payload.trackSvgSrc}`, 'success');
+      state.draft.trackVectorSource = `F1DB 本地赛道 SVG · ${payload.circuitName} · ${payload.layoutId}`;
+      setStatus(`赛道 SVG 已导入：${payload.circuitName} (${payload.layoutId})`, 'success');
+      pushActivity(`赛道 SVG 已导入：${payload.circuitName} (${payload.layoutId})`, 'success');
     });
   });
 
