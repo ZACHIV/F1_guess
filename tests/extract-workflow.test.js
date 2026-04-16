@@ -22,14 +22,26 @@ describe('buildExtractionCommands', () => {
       url: 'https://example.com/video'
     });
 
-    expect(steps).toHaveLength(3);
+    expect(steps).toHaveLength(2);
     expect(steps[0]).toEqual({
       command: 'yt-dlp',
-      args: ['--merge-output-format', 'mp4', '-o', '.tmp/spa-2026.mp4', 'https://example.com/video']
+      args: [
+        '--extract-audio',
+        '--audio-format',
+        'wav',
+        '--audio-quality',
+        '0',
+        '--no-playlist',
+        '--js-runtimes',
+        'node',
+        '-o',
+        'public/audio/spa-2026.%(ext)s',
+        'https://example.com/video'
+      ]
     });
     expect(steps[1].command).toBe('ffmpeg');
     expect(steps[1].args).toContain('public/audio/spa-2026.wav');
-    expect(steps[2].args).toContain('public/audio/spa-2026.mp3');
+    expect(steps[1].args).toContain('public/audio/spa-2026.mp3');
   });
 });
 
@@ -41,7 +53,7 @@ describe('buildVideoMetadataCommand', () => {
       })
     ).toEqual({
       command: 'yt-dlp',
-      args: ['--dump-single-json', '--skip-download', '--no-warnings', 'https://example.com/video']
+      args: ['--dump-single-json', '--skip-download', '--no-warnings', '--js-runtimes', 'node', 'https://example.com/video']
     });
   });
 });

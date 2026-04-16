@@ -4,7 +4,11 @@
     "title": "Red Bull Ring Opening Minute",
     "category": "Qualifying",
     "status": "ready",
-    "tags": ["pole", "onboard", "mclaren"],
+    "tags": [
+      "pole",
+      "onboard",
+      "mclaren"
+    ],
     "notes": "Seed challenge for the initial studio workflow.",
     "audioSrc": "/audio/austria-pole-onboard-2025.mp3",
     "clipDurationMs": 60000,
@@ -20,9 +24,39 @@
     "telemetryCarDataSrc": "/telemetry/austria-pole-onboard-2025.car-data.json",
     "circuitSvgPath": "M54 237C53 213 58 189 69 166C84 135 110 110 142 87C173 64 205 51 238 43C267 36 299 34 324 42C343 49 357 62 360 79C362 95 356 112 348 127C338 145 324 160 315 176C307 190 302 203 307 215C313 229 329 233 345 232C368 230 392 220 417 203C446 182 467 157 482 129C496 102 504 74 503 49C502 28 493 11 475 5C456 -1 432 6 406 20C375 37 348 65 330 95C316 118 301 141 279 162C258 182 232 197 202 209C177 220 146 231 119 243C96 254 76 272 66 294C57 313 57 334 67 349C79 365 101 372 128 371C159 370 189 358 213 340C235 323 251 298 267 273C283 247 305 226 333 215C359 204 389 203 418 210C446 216 469 228 490 246",
     "prompt": "The opening minute mixes a hard launch, a long uphill acceleration, and a handful of heavy braking points. It feels more like a compact power circuit than a flowing medium-speed complex.",
-    "options": ["Red Bull Ring", "Silverstone", "Suzuka", "Monza"],
+    "options": [
+      "Red Bull Ring",
+      "Silverstone",
+      "Suzuka",
+      "Monza"
+    ],
     "createdAt": "2026-04-16T00:00:00.000Z",
     "updatedAt": "2026-04-16T00:00:00.000Z",
     "sortOrder": 0
+  },
+  {
+    "id": "canada-quali-george-russell-2025",
+    "title": "George Russell's Pole Lap | 2025 Canadian Grand Prix | Pirelli",
+    "category": "Uncategorized",
+    "status": "draft",
+    "tags": [],
+    "notes": "",
+    "audioSrc": "/audio/canada-quali-george-russell-2025.mp3",
+    "clipDurationMs": 100848,
+    "durationLabel": "00:01:40",
+    "trackName": "Circuit Gilles Villeneuve",
+    "trackCountry": "Canada",
+    "driverName": "George Russell",
+    "driverNumber": "63",
+    "telemetrySource": "OpenF1 官方 location + car_data",
+    "trackVectorSource": "F1DB 本地赛道 SVG · Gilles Villeneuve · montreal-6",
+    "trackSvgSrc": "/assets/tracks/canada-quali-george-russell-2025.svg",
+    "telemetryLocationSrc": "/telemetry/canada-quali-george-russell-2025.location.json",
+    "telemetryCarDataSrc": "/telemetry/canada-quali-george-russell-2025.car-data.json",
+    "prompt": "",
+    "options": [],
+    "createdAt": "2026-04-16T07:25:11.725Z",
+    "updatedAt": "2026-04-16T07:36:15.829Z",
+    "sortOrder": 1
   }
 ]

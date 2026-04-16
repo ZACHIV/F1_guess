@@ -10,10 +10,16 @@ Mobile-first single-screen prototype for guessing an F1 circuit from onboard eng
 
 ## Run the app
 ```bash
-npm install
+npm run install:deps
 npm run setup:f1db
 npm run dev
 ```
+
+`npm run install:deps` installs:
+- system tools: `ffmpeg`, `ffprobe`, `yt-dlp`
+- npm packages from `package.json`
+
+If your system `yt-dlp` package is broken, the installer downloads a local fallback binary to `.tools/bin/yt-dlp`, and the API prefers that copy automatically.
 
 ## Internal Studio
 - Open the content workflow at `/studio.html`

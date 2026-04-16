@@ -9,7 +9,7 @@ export function getWorkflowMediaPaths(slug) {
 export function buildVideoMetadataCommand({ url }) {
   return {
     command: 'yt-dlp',
-    args: ['--dump-single-json', '--skip-download', '--no-warnings', url]
+    args: ['--dump-single-json', '--skip-download', '--no-warnings', '--js-runtimes', 'node', url]
   };
 }
 
@@ -19,11 +19,19 @@ export function buildExtractionCommands({ slug, url }) {
   return [
     {
       command: 'yt-dlp',
-      args: ['--merge-output-format', 'mp4', '-o', paths.videoMp4, url]
-    },
-    {
-      command: 'ffmpeg',
-      args: ['-y', '-i', paths.videoMp4, '-vn', '-ac', '2', '-ar', '44100', paths.audioWav]
+      args: [
+        '--extract-audio',
+        '--audio-format',
+        'wav',
+        '--audio-quality',
+        '0',
+        '--no-playlist',
+        '--js-runtimes',
+        'node',
+        '-o',
+        `public/audio/${slug}.%(ext)s`,
+        url
+      ]
     },
     {
       command: 'ffmpeg',

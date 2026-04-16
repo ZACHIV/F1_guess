@@ -294,6 +294,62 @@ function renderResultSection(title, items, labelBuilder) {
   `;
 }
 
+function renderTrackPreview() {
+  if (!state.draft.trackSvgSrc) {
+    return `
+      <section class="result-section">
+        <div class="result-section__header">
+          <strong>赛道图预览</strong>
+          <span>未匹配</span>
+        </div>
+        <div class="result-empty result-empty--wide">还没有导入赛道 SVG。点击“添加地图”后会在这里显示匹配结果。</div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="result-section">
+      <div class="result-section__header">
+        <strong>赛道图预览</strong>
+        <span>已匹配</span>
+      </div>
+      <div class="track-preview-card">
+        <div class="track-preview-card__media">
+          <img src="${escapeHtml(state.draft.trackSvgSrc)}" alt="${escapeHtml(state.draft.trackName || state.draft.id || 'track preview')}" />
+        </div>
+        <div class="track-preview-card__meta">
+          <strong>${escapeHtml(state.draft.trackName || state.form.trackQuery || '本地赛道图')}</strong>
+          <span>${escapeHtml(state.draft.trackVectorSource || 'F1DB 本地赛道 SVG')}</span>
+          <code>${escapeHtml(state.draft.trackSvgSrc)}</code>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+async function resolveSessionKeyForTelemetry() {
+  if (state.form.sessionKey) {
+    return state.form.sessionKey;
+  }
+
+  requireValue(state.form.year, '请先填写年份。');
+  requireValue(state.draft.trackCountry, '请先填写国家，才能自动匹配场次。');
+  requireValue(state.form.sessionName, '请先填写场次名称，才能自动匹配场次。');
+
+  const sessions = await request(
+    `/api/studio/openf1/sessions?year=${encodeURIComponent(state.form.year)}&countryName=${encodeURIComponent(state.draft.trackCountry)}&sessionName=${encodeURIComponent(state.form.sessionName)}`
+  );
+
+  state.sessions = sessions;
+
+  if (sessions.length !== 1) {
+    throw new Error(`无法自动确定唯一场次，当前匹配到 ${sessions.length} 条结果，请手动填写场次 Key。`);
+  }
+
+  state.form.sessionKey = String(sessions[0].session_key ?? '').trim();
+  return state.form.sessionKey;
+}
+
 function render() {
   const filteredChallenges = getFilteredChallenges();
   const selectedChallengeIndex = getSelectedChallengeIndex();
@@ -560,16 +616,12 @@ function render() {
               </label>
             </div>
             <div class="actions">
-              <button class="secondary" type="button" id="track-btn" ${state.busy ? 'disabled' : ''}>从本地导入赛道 SVG</button>
-              <button class="secondary" type="button" id="sessions-btn" ${state.busy ? 'disabled' : ''}>查询场次</button>
-              <button class="secondary" type="button" id="drivers-btn" ${state.busy ? 'disabled' : ''}>查询车手</button>
-              <button class="secondary" type="button" id="laps-btn" ${state.busy ? 'disabled' : ''}>查询圈速</button>
+              <button class="secondary" type="button" id="track-btn" ${state.busy ? 'disabled' : ''}>添加地图</button>
               <button class="primary" type="button" id="telemetry-btn" ${state.busy ? 'disabled' : ''}>导入遥测数据</button>
             </div>
             <div class="result-stack">
-              ${renderResultSection('场次结果', state.sessions, (item) => `<strong>场次 ${escapeHtml(item.session_key)}</strong><span>${escapeHtml(item.country_name)} · ${escapeHtml(item.session_name)}</span>`)}
-              ${renderResultSection('车手结果', state.drivers, (item) => `<strong>#${escapeHtml(item.driver_number)}</strong><span>${escapeHtml(item.full_name)}</span>`)}
-              ${renderResultSection('圈速结果', state.laps, (item) => `<strong>第 ${escapeHtml(item.lap_number)} 圈</strong><span>${escapeHtml(item.lap_duration)} 秒</span>`)}
+              ${renderTrackPreview()}
+              ${renderResultSection('场次匹配', state.sessions, (item) => `<strong>场次 ${escapeHtml(item.session_key)}</strong><span>${escapeHtml(item.country_name)} · ${escapeHtml(item.session_name)}</span>`)}
             </div>
           </article>
 
@@ -876,7 +928,7 @@ function bindEvents() {
   });
 
   document.querySelector('#track-btn')?.addEventListener('click', () => {
-    runAction('正在从本地 f1db 导入赛道 SVG...', async () => {
+    runAction('正在匹配本地赛道 SVG...', async () => {
       requireValue(state.form.trackAsset || state.draft.id, '请先填写赛道 SVG 文件名。');
       requireValue(state.form.trackQuery || state.draft.trackName, '请先填写赛道名或本地检索关键词。');
       const payload = await request('/api/studio/tracks/import-local', {
@@ -888,50 +940,22 @@ function bindEvents() {
       });
       state.draft.trackSvgSrc = payload.trackSvgSrc;
       state.draft.trackVectorSource = `F1DB 本地赛道 SVG · ${payload.circuitName} · ${payload.layoutId}`;
-      setStatus(`赛道 SVG 已导入：${payload.circuitName} (${payload.layoutId})`, 'success');
-      pushActivity(`赛道 SVG 已导入：${payload.circuitName} (${payload.layoutId})`, 'success');
-    });
-  });
-
-  document.querySelector('#sessions-btn')?.addEventListener('click', () => {
-    runAction('正在查询场次...', async () => {
-      requireValue(state.form.year, '请先填写年份。');
-      state.sessions = await request(`/api/studio/openf1/sessions?year=${encodeURIComponent(state.form.year)}&countryName=${encodeURIComponent(state.draft.trackCountry)}&sessionName=${encodeURIComponent(state.form.sessionName)}`);
-      setStatus(`已找到 ${state.sessions.length} 条场次结果。`, 'success');
-      pushActivity(`已找到 ${state.sessions.length} 条场次结果。`, 'success');
-    });
-  });
-
-  document.querySelector('#drivers-btn')?.addEventListener('click', () => {
-    runAction('正在查询车手...', async () => {
-      requireValue(state.form.sessionKey, '请先填写场次 Key。');
-      state.drivers = await request(`/api/studio/openf1/drivers?sessionKey=${encodeURIComponent(state.form.sessionKey)}`);
-      setStatus(`已找到 ${state.drivers.length} 位车手。`, 'success');
-      pushActivity(`已找到 ${state.drivers.length} 位车手。`, 'success');
-    });
-  });
-
-  document.querySelector('#laps-btn')?.addEventListener('click', () => {
-    runAction('正在查询圈速...', async () => {
-      requireValue(state.form.sessionKey, '请先填写场次 Key。');
-      requireValue(state.draft.driverNumber, '请先填写车手号码。');
-      state.laps = await request(`/api/studio/openf1/laps?sessionKey=${encodeURIComponent(state.form.sessionKey)}&driverNumber=${encodeURIComponent(state.draft.driverNumber)}`);
-      setStatus(`已找到 ${state.laps.length} 条有效圈速。`, 'success');
-      pushActivity(`已找到 ${state.laps.length} 条有效圈速。`, 'success');
+      setStatus(`已匹配并导入赛道图：${payload.circuitName} (${payload.layoutId})。下方预览已更新。`, 'success');
+      pushActivity(`赛道图已匹配：${payload.circuitName} (${payload.layoutId})`, 'success');
     });
   });
 
   document.querySelector('#telemetry-btn')?.addEventListener('click', () => {
     runAction('正在导入遥测数据...', async () => {
       requireValue(state.draft.id, '导入遥测数据前请先填写题目 ID / slug。');
-      requireValue(state.form.sessionKey, '请先填写场次 Key。');
       requireValue(state.draft.driverNumber, '请先填写车手号码。');
       requireValue(state.form.lapNumber, '请先填写圈数。');
+      const sessionKey = await resolveSessionKeyForTelemetry();
       const payload = await request('/api/studio/openf1/import', {
         method: 'POST',
         body: JSON.stringify({
           slug: state.draft.id,
-          sessionKey: state.form.sessionKey,
+          sessionKey,
           driverNumber: state.draft.driverNumber,
           lapNumber: state.form.lapNumber
         })
@@ -939,8 +963,8 @@ function bindEvents() {
       state.draft.telemetryLocationSrc = payload.telemetryLocationSrc;
       state.draft.telemetryCarDataSrc = payload.telemetryCarDataSrc;
       state.draft.telemetrySource = 'OpenF1 官方 location + car_data';
-      setStatus(`遥测数据导入完成：${payload.locationPoints} 个位置点，${payload.carSamples} 个车辆数据点。`, 'success');
-      pushActivity(`遥测数据导入完成：${payload.locationPoints} 个位置点，${payload.carSamples} 个车辆数据点。`, 'success');
+      setStatus(`遥测数据导入完成：场次 ${sessionKey}，第 ${state.form.lapNumber} 圈，${payload.locationPoints} 个位置点，${payload.carSamples} 个车辆数据点。`, 'success');
+      pushActivity(`遥测已导入：场次 ${sessionKey} · 第 ${state.form.lapNumber} 圈`, 'success');
     });
   });
 }

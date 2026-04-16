@@ -26,16 +26,26 @@ const app = express();
 const PORT = 8787;
 const root = process.cwd();
 const challengeLibraryPath = resolve(root, 'src/data/challenge-library.json');
+const localToolDir = resolve(root, '.tools/bin');
 
 app.use(express.json({ limit: '2mb' }));
 
+function resolveCommand(command) {
+  const localCommand = resolve(localToolDir, command);
+  return existsSync(localCommand) ? localCommand : command;
+}
+
 function runCommand(command, args) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, { cwd: root });
+    const child = spawn(resolveCommand(command), args, { cwd: root });
     let stderr = '';
 
     child.stderr.on('data', (chunk) => {
       stderr += chunk.toString();
+    });
+
+    child.on('error', (error) => {
+      rejectPromise(error);
     });
 
     child.on('close', (code) => {
@@ -51,7 +61,7 @@ function runCommand(command, args) {
 
 function runCommandWithOutput(command, args) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, { cwd: root });
+    const child = spawn(resolveCommand(command), args, { cwd: root });
     let stdout = '';
     let stderr = '';
 
@@ -61,6 +71,10 @@ function runCommandWithOutput(command, args) {
 
     child.stderr.on('data', (chunk) => {
       stderr += chunk.toString();
+    });
+
+    child.on('error', (error) => {
+      rejectPromise(error);
     });
 
     child.on('close', (code) => {
@@ -82,7 +96,7 @@ async function ensureDir(pathname) {
 
 async function probeDuration(pathname) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn('ffprobe', [
+    const child = spawn(resolveCommand('ffprobe'), [
       '-v',
       'error',
       '-show_entries',
@@ -101,6 +115,10 @@ async function probeDuration(pathname) {
 
     child.stderr.on('data', (chunk) => {
       stderr += chunk.toString();
+    });
+
+    child.on('error', (error) => {
+      rejectPromise(error);
     });
 
     child.on('close', (code) => {

@@ -50,7 +50,7 @@ ensureTool('ffmpeg', 'Install with `brew install ffmpeg`.');
 
 const audioDir = resolve('public/audio');
 const downloadDir = resolve('.tmp');
-const videoPath = resolve(downloadDir, `${slug}.mp4`);
+const sourceWavPath = resolve(downloadDir, `${slug}.source.wav`);
 const paths = getClipOutputPaths(slug);
 const wavPath = resolve(paths.wav);
 const mp3Path = resolve(paths.mp3);
@@ -64,10 +64,25 @@ if (!existsSync(downloadDir)) {
 }
 
 const commands = [
-  ['yt-dlp', ['--merge-output-format', 'mp4', '-o', videoPath, url]],
+  [
+    'yt-dlp',
+    [
+      '--extract-audio',
+      '--audio-format',
+      'wav',
+      '--audio-quality',
+      '0',
+      '--no-playlist',
+      '--js-runtimes',
+      'node',
+      '-o',
+      sourceWavPath,
+      url
+    ]
+  ],
   [
     'ffmpeg',
-    ['-y', '-ss', start, '-to', end, '-i', videoPath, '-vn', '-ac', '2', '-ar', '44100', wavPath]
+    ['-y', '-ss', start, '-to', end, '-i', sourceWavPath, '-ac', '2', '-ar', '44100', wavPath]
   ],
   [
     'ffmpeg',
@@ -90,7 +105,7 @@ for (const [command, args] of commands) {
 }
 
 if (!keepVideo) {
-  console.log(`Video cached at ${basename(videoPath)} in .tmp for repeat clipping.`);
+  console.log(`Source audio cached at ${basename(sourceWavPath)} in .tmp for repeat clipping.`);
 }
 
 console.log(`Done. Created:
