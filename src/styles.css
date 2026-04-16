@@ -188,6 +188,74 @@ input {
   z-index: 1;
 }
 
+.challenge-switcher {
+  position: relative;
+  z-index: 1;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: rgba(10, 11, 14, 0.42);
+}
+
+.challenge-switcher__label {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.challenge-switcher__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.challenge-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 74px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.challenge-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.challenge-chip.is-active {
+  border-color: rgba(255, 106, 0, 0.72);
+  background: linear-gradient(135deg, rgba(255, 106, 0, 0.18), rgba(255, 255, 255, 0.05));
+  box-shadow: 0 16px 28px rgba(255, 106, 0, 0.16);
+}
+
+.challenge-chip strong {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
+
+.challenge-chip span {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 .wave-panel__header {
   display: flex;
   align-items: center;
