@@ -6,6 +6,13 @@ export function getWorkflowMediaPaths(slug) {
   };
 }
 
+export function buildVideoMetadataCommand({ url }) {
+  return {
+    command: 'yt-dlp',
+    args: ['--dump-single-json', '--skip-download', '--no-warnings', url]
+  };
+}
+
 export function buildExtractionCommands({ slug, url }) {
   const paths = getWorkflowMediaPaths(slug);
 

@@ -3,7 +3,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawn } from 'node:child_process';
-import { buildExtractionCommands, getWorkflowMediaPaths } from './lib/extract-workflow.mjs';
+import {
+  buildExtractionCommands,
+  buildVideoMetadataCommand,
+  getWorkflowMediaPaths
+} from './lib/extract-workflow.mjs';
 import { importLocalCircuitSvg } from './lib/f1db-local.mjs';
 import {
   readChallengeLibrary,
@@ -12,6 +16,7 @@ import {
   writeChallengeLibrary
 } from './lib/challenge-library.mjs';
 import { buildLapWindow, fetchOpenF1 } from './lib/openf1.mjs';
+import { parseVideoMetadata, resolveParsedVideoMetadata } from './lib/video-metadata.mjs';
 
 const app = express();
 const PORT = 8787;
@@ -32,6 +37,31 @@ function runCommand(command, args) {
     child.on('close', (code) => {
       if (code === 0) {
         resolvePromise();
+        return;
+      }
+
+      rejectPromise(new Error(stderr || `${command} exited with ${code}`));
+    });
+  });
+}
+
+function runCommandWithOutput(command, args) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, args, { cwd: root });
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolvePromise(stdout);
         return;
       }
 
@@ -110,6 +140,37 @@ app.post('/api/studio/extract', async (request, response, next) => {
       ok: true,
       paths,
       durationMs: Math.round(durationSeconds * 1000)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/studio/video-metadata', async (request, response, next) => {
+  try {
+    const { url, title = '', description = '' } = request.body;
+    let sourceTitle = title;
+    let sourceDescription = description;
+
+    if (url) {
+      const command = buildVideoMetadataCommand({ url });
+      const stdout = await runCommandWithOutput(command.command, command.args);
+      const payload = JSON.parse(stdout);
+      sourceTitle = sourceTitle || payload.title || '';
+      sourceDescription = sourceDescription || payload.description || '';
+    }
+
+    const parsed = parseVideoMetadata({
+      title: sourceTitle,
+      description: sourceDescription
+    });
+    const resolved = await resolveParsedVideoMetadata(parsed, fetchOpenF1);
+
+    response.json({
+      ok: true,
+      sourceTitle,
+      sourceDescription,
+      parsed: resolved
     });
   } catch (error) {
     next(error);

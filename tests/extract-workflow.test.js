@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildExtractionCommands,
+  buildVideoMetadataCommand,
   getWorkflowMediaPaths
 } from '../server/lib/extract-workflow.mjs';
 
@@ -29,5 +30,18 @@ describe('buildExtractionCommands', () => {
     expect(steps[1].command).toBe('ffmpeg');
     expect(steps[1].args).toContain('public/audio/spa-2026.wav');
     expect(steps[2].args).toContain('public/audio/spa-2026.mp3');
+  });
+});
+
+describe('buildVideoMetadataCommand', () => {
+  it('builds the expected yt-dlp metadata inspection command', () => {
+    expect(
+      buildVideoMetadataCommand({
+        url: 'https://example.com/video'
+      })
+    ).toEqual({
+      command: 'yt-dlp',
+      args: ['--dump-single-json', '--skip-download', '--no-warnings', 'https://example.com/video']
+    });
   });
 });

@@ -21,7 +21,7 @@ npm run dev
 - Put the full `f1db` repository at `submodule/f1db`
 - If `submodule/f1db` is missing, run `npm run setup:f1db`
 - Studio workflow:
-  1. Paste a source video URL and extract the full onboard audio
+  1. Paste a source video URL, auto-parse title/description into qualifying metadata, then extract the full onboard audio
   2. Import a track SVG from the local `submodule/f1db` circuit library
   3. Look up OpenF1 sessions, drivers, and laps
   4. Import telemetry for a chosen lap

@@ -23,6 +23,8 @@ const emptyDraft = () => ({
 
 const defaultFormState = () => ({
   videoUrl: '',
+  videoTitle: '',
+  videoDescription: '',
   trackAsset: '',
   trackQuery: '',
   year: '2025',
@@ -127,6 +129,8 @@ function syncDraftFromForm() {
 
 function syncFormState() {
   state.form.videoUrl = document.querySelector('#video-url')?.value.trim() ?? state.form.videoUrl;
+  state.form.videoTitle = document.querySelector('#video-title')?.value.trim() ?? state.form.videoTitle;
+  state.form.videoDescription = document.querySelector('#video-description')?.value.trim() ?? state.form.videoDescription;
   state.form.trackAsset = document.querySelector('#track-asset')?.value.trim() ?? state.form.trackAsset;
   state.form.trackQuery = document.querySelector('#track-query')?.value.trim() ?? state.form.trackQuery;
   state.form.year = document.querySelector('#year')?.value.trim() ?? state.form.year;
@@ -268,6 +272,14 @@ function render() {
                 <span>视频网址</span>
                 <input id="video-url" value="${escapeHtml(state.form.videoUrl)}" placeholder="https://..." />
               </label>
+              <label class="field field--full">
+                <span>视频标题</span>
+                <input id="video-title" value="${escapeHtml(state.form.videoTitle)}" placeholder="可留空，支持从视频网址自动读取" />
+              </label>
+              <label class="field field--full">
+                <span>视频简介</span>
+                <textarea id="video-description" placeholder="可留空，支持从视频网址自动读取">${escapeHtml(state.form.videoDescription)}</textarea>
+              </label>
               <label class="field">
                 <span>题目 ID / slug</span>
                 <input id="draft-id" value="${escapeHtml(state.draft.id)}" />
@@ -278,6 +290,7 @@ function render() {
               </label>
             </div>
             <div class="actions">
+              <button class="secondary" type="button" id="parse-video-btn" ${state.busy ? 'disabled' : ''}>${state.busy && state.busyLabel.includes('解析视频') ? '解析中...' : '解析视频信息'}</button>
               <button class="primary" type="button" id="extract-btn" ${state.busy ? 'disabled' : ''}>${state.busy && state.busyLabel.includes('音频') ? '提取中...' : '提取整段音频'}</button>
             </div>
           </article>
@@ -445,6 +458,42 @@ function bindEvents() {
       state.form.trackAsset = state.form.trackAsset || state.draft.id;
       setStatus(`音频提取完成，已生成 ${state.draft.audioSrc}`, 'success');
       pushActivity(`音频提取完成：${state.draft.audioSrc}`, 'success');
+    });
+  });
+
+  document.querySelector('#parse-video-btn')?.addEventListener('click', () => {
+    runAction('正在解析视频标题与简介...', async () => {
+      requireValue(state.form.videoUrl || state.form.videoTitle || state.form.videoDescription, '请先填写视频网址，或至少补充标题 / 简介。');
+      const payload = await request('/api/studio/video-metadata', {
+        method: 'POST',
+        body: JSON.stringify({
+          url: state.form.videoUrl,
+          title: state.form.videoTitle,
+          description: state.form.videoDescription
+        })
+      });
+
+      state.form.videoTitle = payload.sourceTitle || '';
+      state.form.videoDescription = payload.sourceDescription || '';
+
+      state.draft.id = payload.parsed.id || '';
+      state.draft.title = payload.parsed.title || '';
+      state.draft.trackName = payload.parsed.trackName || '';
+      state.draft.trackCountry = payload.parsed.trackCountry || '';
+      state.draft.driverName = payload.parsed.driverName || '';
+      state.draft.driverNumber = payload.parsed.driverNumber || '';
+      state.form.trackQuery = payload.parsed.trackQuery || '';
+      state.form.year = payload.parsed.year || '';
+      state.form.sessionName = payload.parsed.sessionName || '';
+      state.form.sessionKey = payload.parsed.sessionKey || '';
+      state.form.lapNumber = payload.parsed.lapNumber || '';
+      state.form.trackAsset = state.form.trackAsset || state.draft.id;
+
+      const unresolvedLabel = payload.parsed.unresolvedFields.length
+        ? `未识别字段：${payload.parsed.unresolvedFields.join(', ')}`
+        : '基础字段已自动补全。';
+      setStatus(`视频信息解析完成。${unresolvedLabel}`, 'success');
+      pushActivity(`视频信息解析完成。${unresolvedLabel}`, 'success');
     });
   });
 
