@@ -91,4 +91,57 @@ describe('resolveParsedVideoMetadata', () => {
     expect(resolved.driverNumber).toBe('4');
     expect(resolved.lapNumber).toBe('17');
   });
+
+  it('falls back to an alternate fastest-lap resolver when OpenF1 laps are missing', async () => {
+    const fetchOpenF1 = async (pathname) => {
+      if (pathname === '/sessions') {
+        return [
+          {
+            session_key: 9900,
+            session_name: 'Qualifying',
+            circuit_short_name: 'Baku',
+            country_name: 'Azerbaijan',
+            location: 'Baku'
+          }
+        ];
+      }
+
+      if (pathname === '/drivers') {
+        return [
+          {
+            session_key: 9900,
+            driver_number: 1,
+            full_name: 'Max VERSTAPPEN'
+          }
+        ];
+      }
+
+      if (pathname === '/laps') {
+        throw new Error('OpenF1 request failed: 404');
+      }
+
+      return [];
+    };
+
+    const parsed = {
+      ...parseVideoMetadata({
+        title: 'Max Verstappen Pole Lap | 2025 Azerbaijan Grand Prix Qualifying Onboard',
+        description: 'Baku onboard.'
+      }),
+      grandPrix: 'Azerbaijan Grand Prix'
+    };
+    const resolveFastestLap = async () => ({
+      lapNumber: '22',
+      lapStartIso: '2025-09-20T14:10:13.495Z',
+      lapDurationSeconds: 101.117
+    });
+
+    const resolved = await resolveParsedVideoMetadata(parsed, fetchOpenF1, { resolveFastestLap });
+
+    expect(resolved.sessionKey).toBe('9900');
+    expect(resolved.driverNumber).toBe('1');
+    expect(resolved.lapNumber).toBe('22');
+    expect(resolved.lapStartIso).toBe('2025-09-20T14:10:13.495Z');
+    expect(resolved.lapDurationSeconds).toBe(101.117);
+  });
 });

@@ -16,6 +16,7 @@ import TrackHUD from './components/TrackHUD.jsx';
 import TimerRing from './components/TimerRing.jsx';
 import AnswerDock from './components/AnswerDock.jsx';
 import TelemetryStrip from './components/TelemetryStrip.jsx';
+import { getSynchronizedElapsedMs } from './sync-utils.js';
 
 const TRACK_DIMENSIONS = { width: 360, height: 250, padding: 26 };
 const STORAGE_KEY = 'f1-guess:selected-challenge';
@@ -178,13 +179,16 @@ export default function App({ initialLibrary }) {
       return;
     }
 
-    const nextMarker = getInterpolatedTelemetryPoint(telemetryModel.locationFrames, currentTime) ?? telemetryModel.initialMarker;
-    const nextHudState = getNearestTelemetrySample(telemetryModel.carFrames, currentTime) ?? telemetryModel.initialHud;
+    const syncedElapsedMs = getSynchronizedElapsedMs(currentTime, challenge);
+    const nextMarker = getInterpolatedTelemetryPoint(telemetryModel.locationFrames, syncedElapsedMs) ?? telemetryModel.initialMarker;
+    const nextHudState = getNearestTelemetrySample(telemetryModel.carFrames, syncedElapsedMs) ?? telemetryModel.initialHud;
     setMarker(nextMarker);
     setHudState(nextHudState);
-  }, [currentTime, telemetryModel]);
+  }, [challenge, currentTime, telemetryModel]);
 
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
+  const syncedElapsedMs = getSynchronizedElapsedMs(currentTime, challenge);
+  const syncedDurationMs = Math.max(0, (challenge.clipDurationMs ?? 0) - Number(challenge.telemetryOffsetMs ?? 0));
 
   if (!challenge) {
     return <div className="flex min-h-screen items-center justify-center bg-[#040507] text-white">No playable challenge found.</div>;
@@ -264,7 +268,7 @@ export default function App({ initialLibrary }) {
             marker={marker}
             telemetryPath={telemetryPath}
           />
-          <TimerRing currentTime={currentTime} durationMs={challenge.clipDurationMs ?? 0} />
+          <TimerRing currentTime={syncedElapsedMs} durationMs={syncedDurationMs} />
         </div>
 
         <TelemetryStrip hudState={hudState} />

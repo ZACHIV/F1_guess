@@ -262,7 +262,11 @@ export function pickFastestLap(laps) {
     .sort((left, right) => Number(left.lap_duration) - Number(right.lap_duration))[0] ?? null;
 }
 
-export async function resolveParsedVideoMetadata(parsed, fetchOpenF1) {
+function isOpenF1NotFoundError(error) {
+  return /OpenF1 request failed: 404/.test(String(error?.message ?? error));
+}
+
+export async function resolveParsedVideoMetadata(parsed, fetchOpenF1, options = {}) {
   const resolved = { ...parsed };
 
   if (resolved.year && resolved.sessionName) {
@@ -297,14 +301,27 @@ export async function resolveParsedVideoMetadata(parsed, fetchOpenF1) {
   }
 
   if (resolved.sessionKey && resolved.driverNumber && resolved.sessionName === 'Qualifying') {
-    const laps = await fetchOpenF1('/laps', {
-      session_key: resolved.sessionKey,
-      driver_number: resolved.driverNumber
-    });
-    const fastestLap = pickFastestLap(laps);
+    try {
+      const laps = await fetchOpenF1('/laps', {
+        session_key: resolved.sessionKey,
+        driver_number: resolved.driverNumber
+      });
+      const fastestLap = pickFastestLap(laps);
 
-    if (fastestLap) {
-      resolved.lapNumber = String(fastestLap.lap_number);
+      if (fastestLap) {
+        resolved.lapNumber = String(fastestLap.lap_number);
+      }
+    } catch (error) {
+      if (!isOpenF1NotFoundError(error) || !options.resolveFastestLap) {
+        throw error;
+      }
+
+      const fallback = await options.resolveFastestLap(resolved);
+      if (fallback) {
+        resolved.lapNumber = String(fallback.lapNumber ?? '');
+        resolved.lapStartIso = fallback.lapStartIso ?? '';
+        resolved.lapDurationSeconds = Number(fallback.lapDurationSeconds ?? 0);
+      }
     }
   }
 

@@ -43,6 +43,31 @@ describe('buildExtractionCommands', () => {
     expect(steps[1].args).toContain('public/audio/spa-2026.wav');
     expect(steps[1].args).toContain('public/audio/spa-2026.mp3');
   });
+
+  it('adds browser cookies to the yt-dlp step when requested', () => {
+    const steps = buildExtractionCommands({
+      slug: 'spa-2026',
+      url: 'https://example.com/video',
+      cookiesFromBrowser: 'safari'
+    });
+
+    expect(steps[0].args).toContain('--cookies-from-browser');
+    expect(steps[0].args).toContain('safari');
+  });
+
+  it('prefers a cookies.txt file when one is provided', () => {
+    const steps = buildExtractionCommands({
+      slug: 'spa-2026',
+      url: 'https://example.com/video',
+      cookiesPath: '.tmp/youtube-cookies.txt',
+      cookiesFromBrowser: 'safari'
+    });
+
+    expect(steps[0].args).toContain('--cookies');
+    expect(steps[0].args).toContain('.tmp/youtube-cookies.txt');
+    expect(steps[0].args).not.toContain('--cookies-from-browser');
+    expect(steps[0].args).not.toContain('safari');
+  });
 });
 
 describe('buildVideoMetadataCommand', () => {
@@ -54,6 +79,27 @@ describe('buildVideoMetadataCommand', () => {
     ).toEqual({
       command: 'yt-dlp',
       args: ['--dump-single-json', '--skip-download', '--no-warnings', '--js-runtimes', 'node', 'https://example.com/video']
+    });
+  });
+
+  it('adds cookies.txt to metadata inspection when provided', () => {
+    expect(
+      buildVideoMetadataCommand({
+        url: 'https://example.com/video',
+        cookiesPath: '.tmp/youtube-cookies.txt'
+      })
+    ).toEqual({
+      command: 'yt-dlp',
+      args: [
+        '--dump-single-json',
+        '--skip-download',
+        '--no-warnings',
+        '--js-runtimes',
+        'node',
+        '--cookies',
+        '.tmp/youtube-cookies.txt',
+        'https://example.com/video'
+      ]
     });
   });
 });

@@ -6,15 +6,24 @@ export function getWorkflowMediaPaths(slug) {
   };
 }
 
-export function buildVideoMetadataCommand({ url }) {
+export function buildVideoMetadataCommand({ url, cookiesPath = '' }) {
+  const cookieArgs = cookiesPath
+    ? ['--cookies', cookiesPath]
+    : [];
+
   return {
     command: 'yt-dlp',
-    args: ['--dump-single-json', '--skip-download', '--no-warnings', '--js-runtimes', 'node', url]
+    args: ['--dump-single-json', '--skip-download', '--no-warnings', '--js-runtimes', 'node', ...cookieArgs, url]
   };
 }
 
-export function buildExtractionCommands({ slug, url }) {
+export function buildExtractionCommands({ slug, url, cookiesFromBrowser = '', cookiesPath = '' }) {
   const paths = getWorkflowMediaPaths(slug);
+  const cookieArgs = cookiesPath
+    ? ['--cookies', cookiesPath]
+    : cookiesFromBrowser
+      ? ['--cookies-from-browser', cookiesFromBrowser]
+      : [];
 
   return [
     {
@@ -28,6 +37,7 @@ export function buildExtractionCommands({ slug, url }) {
         '--no-playlist',
         '--js-runtimes',
         'node',
+        ...cookieArgs,
         '-o',
         `public/audio/${slug}.%(ext)s`,
         url
