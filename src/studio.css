@@ -489,6 +489,12 @@ button:disabled {
   line-height: 1.55;
 }
 
+.prompt-textarea {
+  min-height: 220px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
 @keyframes studio-progress {
   0% {
     transform: translateX(-120%);

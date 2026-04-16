@@ -1,4 +1,8 @@
 import './studio.css';
+import {
+  buildMetadataAssistantPrompt,
+  parseMetadataAssistantResponse
+} from './lib/studio-ai-utils.js';
 
 const app = document.querySelector('#app');
 
@@ -25,6 +29,8 @@ const defaultFormState = () => ({
   videoUrl: '',
   videoTitle: '',
   videoDescription: '',
+  aiPrompt: '',
+  aiResponse: '',
   trackAsset: '',
   trackQuery: '',
   year: '2025',
@@ -131,6 +137,8 @@ function syncFormState() {
   state.form.videoUrl = document.querySelector('#video-url')?.value.trim() ?? state.form.videoUrl;
   state.form.videoTitle = document.querySelector('#video-title')?.value.trim() ?? state.form.videoTitle;
   state.form.videoDescription = document.querySelector('#video-description')?.value.trim() ?? state.form.videoDescription;
+  state.form.aiPrompt = document.querySelector('#ai-prompt')?.value ?? state.form.aiPrompt;
+  state.form.aiResponse = document.querySelector('#ai-response')?.value ?? state.form.aiResponse;
   state.form.trackAsset = document.querySelector('#track-asset')?.value.trim() ?? state.form.trackAsset;
   state.form.trackQuery = document.querySelector('#track-query')?.value.trim() ?? state.form.trackQuery;
   state.form.year = document.querySelector('#year')?.value.trim() ?? state.form.year;
@@ -297,6 +305,26 @@ function render() {
 
           <article class="studio-card">
             <p class="eyebrow">步骤二</p>
+            <h2>大模型校对</h2>
+            <div class="form-grid">
+              <label class="field field--full">
+                <span>提示词</span>
+                <textarea id="ai-prompt" class="prompt-textarea" placeholder="点击下方按钮自动生成给大模型的提示词">${escapeHtml(state.form.aiPrompt)}</textarea>
+              </label>
+              <label class="field field--full">
+                <span>大模型返回结果</span>
+                <textarea id="ai-response" class="prompt-textarea" placeholder='把大模型返回的 JSON 直接粘贴到这里'>${escapeHtml(state.form.aiResponse)}</textarea>
+              </label>
+            </div>
+            <div class="actions">
+              <button class="secondary" type="button" id="generate-prompt-btn" ${state.busy ? 'disabled' : ''}>生成提示词</button>
+              <button class="secondary" type="button" id="copy-prompt-btn" ${state.busy ? 'disabled' : ''}>复制提示词</button>
+              <button class="primary" type="button" id="apply-ai-btn" ${state.busy ? 'disabled' : ''}>应用返回结果</button>
+            </div>
+          </article>
+
+          <article class="studio-card">
+            <p class="eyebrow">步骤三</p>
             <h2>赛道与题目编辑</h2>
             <div class="form-grid">
               <label class="field">
@@ -331,7 +359,7 @@ function render() {
           </article>
 
           <article class="studio-card">
-            <p class="eyebrow">步骤三</p>
+            <p class="eyebrow">步骤四</p>
             <h2>赛道 SVG 与遥测数据</h2>
             <div class="form-grid">
               <label class="field">
@@ -494,6 +522,70 @@ function bindEvents() {
         : '基础字段已自动补全。';
       setStatus(`视频信息解析完成。${unresolvedLabel}`, 'success');
       pushActivity(`视频信息解析完成。${unresolvedLabel}`, 'success');
+    });
+  });
+
+  document.querySelector('#generate-prompt-btn')?.addEventListener('click', () => {
+    syncAllFromForm();
+    state.form.aiPrompt = buildMetadataAssistantPrompt({
+      videoUrl: state.form.videoUrl,
+      videoTitle: state.form.videoTitle,
+      videoDescription: state.form.videoDescription,
+      draft: state.draft,
+      form: state.form
+    });
+    setStatus('已生成给大模型的提示词。', 'success');
+    pushActivity('已生成给大模型的提示词。', 'success');
+    render();
+  });
+
+  document.querySelector('#copy-prompt-btn')?.addEventListener('click', async () => {
+    syncAllFromForm();
+
+    if (!state.form.aiPrompt.trim()) {
+      state.form.aiPrompt = buildMetadataAssistantPrompt({
+        videoUrl: state.form.videoUrl,
+        videoTitle: state.form.videoTitle,
+        videoDescription: state.form.videoDescription,
+        draft: state.draft,
+        form: state.form
+      });
+    }
+
+    try {
+      await navigator.clipboard.writeText(state.form.aiPrompt);
+      setStatus('提示词已复制，可以直接粘贴给大模型。', 'success');
+      pushActivity('提示词已复制，可以直接粘贴给大模型。', 'success');
+    } catch {
+      setStatus('浏览器未能自动复制，提示词已生成，请手动复制文本框内容。', 'error');
+      pushActivity('浏览器未能自动复制，请手动复制提示词。', 'error');
+    }
+
+    render();
+  });
+
+  document.querySelector('#apply-ai-btn')?.addEventListener('click', () => {
+    runAction('正在应用大模型返回结果...', async () => {
+      const parsed = parseMetadataAssistantResponse(state.form.aiResponse);
+
+      state.draft.id = parsed.id || state.draft.id;
+      state.draft.title = parsed.title || state.draft.title;
+      state.draft.trackName = parsed.trackName;
+      state.draft.trackCountry = parsed.trackCountry;
+      state.draft.driverName = parsed.driverName;
+      state.draft.driverNumber = parsed.driverNumber;
+      state.form.trackQuery = parsed.trackQuery;
+      state.form.year = parsed.year;
+      state.form.sessionName = parsed.sessionName;
+      state.form.sessionKey = parsed.sessionKey;
+      state.form.lapNumber = parsed.lapNumber;
+      state.form.trackAsset = state.form.trackAsset || state.draft.id;
+
+      const unresolvedLabel = parsed.unresolvedFields.length
+        ? `仍待确认：${parsed.unresolvedFields.join(', ')}`
+        : '关键字段已回填完成。';
+      setStatus(`大模型结果已应用。${unresolvedLabel}`, 'success');
+      pushActivity(`大模型结果已应用。${unresolvedLabel}`, 'success');
     });
   });
 

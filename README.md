@@ -22,10 +22,11 @@ npm run dev
 - If `submodule/f1db` is missing, run `npm run setup:f1db`
 - Studio workflow:
   1. Paste a source video URL, auto-parse title/description into qualifying metadata, then extract the full onboard audio
-  2. Import a track SVG from the local `submodule/f1db` circuit library
-  3. Look up OpenF1 sessions, drivers, and laps
-  4. Import telemetry for a chosen lap
-  5. Save the challenge into `src/data/challenge-library.json`
+  2. Generate a ready-to-copy LLM prompt, paste the model's JSON reply back into Studio, and apply the reviewed metadata
+  3. Import a track SVG from the local `submodule/f1db` circuit library
+  4. Look up OpenF1 sessions, drivers, and laps
+  5. Import telemetry for a chosen lap
+  6. Save the challenge into `src/data/challenge-library.json`
 
 To refresh the local mirror on another machine:
 ```bash
