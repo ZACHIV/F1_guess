@@ -17,6 +17,10 @@
     "trackCountry": "Austria",
     "driverName": "Lando Norris",
     "driverNumber": "4",
+    "answerAliases": [
+      "Spielberg",
+      "Austria"
+    ],
     "telemetrySource": "OpenF1 official location + car_data",
     "trackVectorSource": "Wikimedia Commons reference SVG",
     "trackSvgSrc": "/assets/tracks/red-bull-ring.svg",
@@ -48,6 +52,10 @@
     "trackCountry": "Canada",
     "driverName": "George Russell",
     "driverNumber": "63",
+    "answerAliases": [
+      "Montreal",
+      "Gilles Villeneuve"
+    ],
     "telemetrySource": "OpenF1 官方 location + car_data",
     "trackVectorSource": "F1DB 本地赛道 SVG · Gilles Villeneuve · montreal-6",
     "trackSvgSrc": "/assets/tracks/canada-quali-george-russell-2025.svg",
@@ -73,6 +81,10 @@
     "trackCountry": "United States",
     "driverName": "Max Verstappen",
     "driverNumber": "1",
+    "answerAliases": [
+      "COTA",
+      "Austin"
+    ],
     "telemetrySource": "OpenF1 官方 location + car_data",
     "trackVectorSource": "F1DB 本地赛道 SVG · Americas · austin-1",
     "trackSvgSrc": "/assets/tracks/track-asset.svg",

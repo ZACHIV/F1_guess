@@ -1,6 +1,6 @@
 import WaveSurfer from 'wavesurfer.js';
 
-export function mountWaveform(container, audioSrc) {
+export function mountWaveform(container, audioSrc, options = {}) {
   if (!container || !audioSrc) {
     return null;
   }
@@ -16,7 +16,8 @@ export function mountWaveform(container, audioSrc) {
     interact: false,
     waveColor: 'rgba(255,255,255,0.25)',
     progressColor: '#ffffff',
-    cursorWidth: 0
+    cursorWidth: 0,
+    ...options
   });
 
   return wave;

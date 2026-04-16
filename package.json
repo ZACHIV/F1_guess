@@ -15,10 +15,19 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "wavesurfer.js": "^7.11.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitejs/plugin-react": "^5.2.0",
     "concurrently": "^9.2.1",
+    "jsdom": "^27.0.1",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^4.2.2",
     "vite": "^7.1.10",
     "vitest": "^3.2.4"
   }
