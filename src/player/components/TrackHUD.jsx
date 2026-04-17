@@ -14,10 +14,13 @@ export default function TrackHUD({
       <div className="relative">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="hud-label">circuit trace</p>
+            <p className="hud-label">debrief trace</p>
             <h2 className="mt-2 text-[1.15rem] font-semibold leading-tight text-white">
               {challenge.trackName}
             </h2>
+            <p className="mt-2 max-w-[18rem] text-sm leading-6 text-stone-300/85">
+              Revealed only after the duel ends. Scrub the clip and read the corner geometry.
+            </p>
           </div>
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-right">
             <p className="text-[11px] uppercase tracking-[0.22em] text-stone-400">

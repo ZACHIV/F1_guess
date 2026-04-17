@@ -13,7 +13,7 @@ export default function TelemetryStrip({ hudState }) {
           className="glass-panel rounded-[24px] border border-white/12 px-4 py-3"
           key={key}
         >
-          <p className="hud-label">{label}</p>
+          <p className="hud-label">debrief {label}</p>
           <strong className="mt-2 block text-[1.45rem] font-semibold text-white">
             {hudState?.[key] ?? '-'}
           </strong>
