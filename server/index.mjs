@@ -2,12 +2,14 @@ import express from 'express';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import {
   buildExtractionCommands,
   buildVideoMetadataCommand,
   getWorkflowMediaPaths
 } from './lib/extract-workflow.mjs';
+import { createAssetStorage, resolveStoredAssetUrl } from './lib/asset-storage.mjs';
 import { importLocalCircuitSvg } from './lib/f1db-local.mjs';
 import {
   duplicateChallengeRecord,
@@ -22,13 +24,12 @@ import {
 import { buildLapWindow, fetchOpenF1 } from './lib/openf1.mjs';
 import { parseVideoMetadata, resolveParsedVideoMetadata } from './lib/video-metadata.mjs';
 
-const app = express();
 const PORT = 8787;
 const root = process.cwd();
 const challengeLibraryPath = resolve(root, 'src/data/challenge-library.json');
 const localToolDir = resolve(root, '.tools/bin');
-
-app.use(express.json({ limit: '2mb' }));
+const assetStorage = createAssetStorage();
+const isVercelRuntime = Boolean(process.env.VERCEL);
 
 function resolveCommand(command) {
   const localCommand = resolve(localToolDir, command);
@@ -94,6 +95,12 @@ async function ensureDir(pathname) {
   }
 }
 
+function requireLocalStudio(featureName) {
+  if (isVercelRuntime) {
+    throw new Error(`${featureName} is only available in local Studio. Vercel deploys support the game frontend, but not local file generation or repo writes.`);
+  }
+}
+
 async function probeDuration(pathname) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(resolveCommand('ffprobe'), [
@@ -132,24 +139,33 @@ async function probeDuration(pathname) {
   });
 }
 
-app.get('/api/health', (_request, response) => {
-  response.json({ ok: true });
-});
+export function createApp() {
+  const app = express();
 
-app.get('/api/studio/library', async (_request, response, next) => {
-  try {
-    const records = await readChallengeLibrary(challengeLibraryPath);
+  app.use(express.json({ limit: '2mb' }));
+
+  app.get('/api/health', (_request, response) => {
     response.json({
-      records,
-      summary: getChallengeLibrarySummary(records)
+      ok: true,
+      runtime: isVercelRuntime ? 'vercel' : 'local'
     });
-  } catch (error) {
-    next(error);
-  }
-});
+  });
 
-app.post('/api/studio/extract', async (request, response, next) => {
+  app.get('/api/studio/library', async (_request, response, next) => {
+    try {
+      const records = await readChallengeLibrary(challengeLibraryPath);
+      response.json({
+        records,
+        summary: getChallengeLibrarySummary(records)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/api/studio/extract', async (request, response, next) => {
   try {
+    requireLocalStudio('Audio extraction');
     const { slug, url } = request.body;
     const paths = getWorkflowMediaPaths(slug);
 
@@ -161,19 +177,35 @@ app.post('/api/studio/extract', async (request, response, next) => {
     }
 
     const durationSeconds = await probeDuration(resolve(root, paths.audioMp3));
+    const [audioMp3, audioWav] = await Promise.all([
+      resolveStoredAssetUrl(assetStorage, {
+        localPath: resolve(root, paths.audioMp3),
+        localPublicPath: paths.audioMp3,
+        key: `audio/${slug}.mp3`
+      }),
+      resolveStoredAssetUrl(assetStorage, {
+        localPath: resolve(root, paths.audioWav),
+        localPublicPath: paths.audioWav,
+        key: `audio/${slug}.wav`
+      })
+    ]);
 
     response.json({
       ok: true,
       paths,
+      storage: audioMp3.storage,
+      audioSrc: audioMp3.url,
+      audioWavSrc: audioWav.url,
       durationMs: Math.round(durationSeconds * 1000)
     });
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.post('/api/studio/video-metadata', async (request, response, next) => {
+  app.post('/api/studio/video-metadata', async (request, response, next) => {
   try {
+    requireLocalStudio('Video metadata parsing from source URLs');
     const { url, title = '', description = '' } = request.body;
     let sourceTitle = title;
     let sourceDescription = description;
@@ -201,27 +233,35 @@ app.post('/api/studio/video-metadata', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.post('/api/studio/tracks/import-local', async (request, response, next) => {
+  app.post('/api/studio/tracks/import-local', async (request, response, next) => {
   try {
+    requireLocalStudio('Local f1db track import');
     const { assetName, query } = request.body;
     const targetDir = resolve(root, 'public/assets/tracks');
 
     await ensureDir(targetDir);
 
     const result = await importLocalCircuitSvg(root, { assetName, query });
+    const storedTrack = await resolveStoredAssetUrl(assetStorage, {
+      localPath: resolve(root, 'public/assets/tracks', `${assetName}.svg`),
+      localPublicPath: `public/assets/tracks/${assetName}.svg`,
+      key: `assets/tracks/${assetName}.svg`
+    });
 
     response.json({
       ok: true,
-      ...result
+      ...result,
+      storage: storedTrack.storage,
+      trackSvgSrc: storedTrack.url
     });
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.get('/api/studio/openf1/sessions', async (request, response, next) => {
+  app.get('/api/studio/openf1/sessions', async (request, response, next) => {
   try {
     const result = await fetchOpenF1('/sessions', {
       year: request.query.year,
@@ -232,9 +272,9 @@ app.get('/api/studio/openf1/sessions', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.get('/api/studio/openf1/drivers', async (request, response, next) => {
+  app.get('/api/studio/openf1/drivers', async (request, response, next) => {
   try {
     const result = await fetchOpenF1('/drivers', {
       session_key: request.query.sessionKey
@@ -243,9 +283,9 @@ app.get('/api/studio/openf1/drivers', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.get('/api/studio/openf1/laps', async (request, response, next) => {
+  app.get('/api/studio/openf1/laps', async (request, response, next) => {
   try {
     const result = await fetchOpenF1('/laps', {
       session_key: request.query.sessionKey,
@@ -255,10 +295,11 @@ app.get('/api/studio/openf1/laps', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.post('/api/studio/openf1/import', async (request, response, next) => {
+  app.post('/api/studio/openf1/import', async (request, response, next) => {
   try {
+    requireLocalStudio('Telemetry import');
     const { slug, sessionKey, driverNumber, lapNumber } = request.body;
     const telemetryDir = resolve(root, 'public/telemetry');
     const laps = await fetchOpenF1('/laps', {
@@ -295,11 +336,26 @@ app.post('/api/studio/openf1/import', async (request, response, next) => {
 
     await writeFile(locationPath, `${JSON.stringify(location, null, 2)}\n`, 'utf8');
     await writeFile(carDataPath, `${JSON.stringify(carData, null, 2)}\n`, 'utf8');
+    const [storedLocation, storedCarData] = await Promise.all([
+      resolveStoredAssetUrl(assetStorage, {
+        localPath: locationPath,
+        localPublicPath: `public/telemetry/${slug}.location.json`,
+        key: `telemetry/${slug}.location.json`,
+        cacheControl: 'public, max-age=300'
+      }),
+      resolveStoredAssetUrl(assetStorage, {
+        localPath: carDataPath,
+        localPublicPath: `public/telemetry/${slug}.car-data.json`,
+        key: `telemetry/${slug}.car-data.json`,
+        cacheControl: 'public, max-age=300'
+      })
+    ]);
 
     response.json({
       ok: true,
-      telemetryLocationSrc: `/telemetry/${slug}.location.json`,
-      telemetryCarDataSrc: `/telemetry/${slug}.car-data.json`,
+      storage: storedLocation.storage,
+      telemetryLocationSrc: storedLocation.url,
+      telemetryCarDataSrc: storedCarData.url,
       locationPoints: location.length,
       carSamples: carData.length,
       lapDuration: lap.lap_duration
@@ -307,10 +363,11 @@ app.post('/api/studio/openf1/import', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.post('/api/studio/challenges', async (request, response, next) => {
+  app.post('/api/studio/challenges', async (request, response, next) => {
   try {
+    requireLocalStudio('Challenge library writes');
     const existing = await readChallengeLibrary(challengeLibraryPath);
     const updated = upsertChallengeRecord(existing, request.body);
 
@@ -324,10 +381,11 @@ app.post('/api/studio/challenges', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.post('/api/studio/challenges/duplicate', async (request, response, next) => {
+  app.post('/api/studio/challenges/duplicate', async (request, response, next) => {
   try {
+    requireLocalStudio('Challenge duplication');
     const existing = await readChallengeLibrary(challengeLibraryPath);
     const updated = duplicateChallengeRecord(existing, request.body.sourceId, request.body.newId);
 
@@ -341,10 +399,11 @@ app.post('/api/studio/challenges/duplicate', async (request, response, next) => 
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.post('/api/studio/challenges/reorder', async (request, response, next) => {
+  app.post('/api/studio/challenges/reorder', async (request, response, next) => {
   try {
+    requireLocalStudio('Challenge reorder');
     const existing = await readChallengeLibrary(challengeLibraryPath);
     const updated = moveChallengeRecord(existing, request.body.id, request.body.direction);
 
@@ -358,10 +417,11 @@ app.post('/api/studio/challenges/reorder', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
+  });
 
-app.delete('/api/studio/challenges/:id', async (request, response, next) => {
+  app.delete('/api/studio/challenges/:id', async (request, response, next) => {
   try {
+    requireLocalStudio('Challenge deletion');
     const existing = await readChallengeLibrary(challengeLibraryPath);
     const updated = removeChallengeRecord(existing, request.params.id);
 
@@ -374,15 +434,24 @@ app.delete('/api/studio/challenges/:id', async (request, response, next) => {
   } catch (error) {
     next(error);
   }
-});
-
-app.use((error, _request, response, _next) => {
-  response.status(500).json({
-    ok: false,
-    error: error instanceof Error ? error.message : 'Unknown error'
   });
-});
 
-app.listen(PORT, () => {
-  console.log(`Studio API listening on http://127.0.0.1:${PORT}`);
-});
+  app.use((error, _request, response, _next) => {
+    response.status(500).json({
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  });
+
+  return app;
+}
+
+export const app = createApp();
+export default app;
+
+const currentFilePath = fileURLToPath(import.meta.url);
+if (process.argv[1] && resolve(process.argv[1]) === currentFilePath) {
+  app.listen(PORT, () => {
+    console.log(`Studio API listening on http://127.0.0.1:${PORT}`);
+  });
+}

@@ -3,4 +3,6 @@ dist/
 .tmp/
 data-cache/
 .claude/
+.next/
+.tools/
 .DS_Store

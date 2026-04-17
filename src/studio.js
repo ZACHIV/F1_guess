@@ -768,12 +768,12 @@ function bindEvents() {
         })
       });
 
-      state.draft.audioSrc = `/${payload.paths.audioMp3.replace(/^public\//, '')}`;
+      state.draft.audioSrc = payload.audioSrc;
       state.draft.clipDurationMs = payload.durationMs;
       state.draft.durationLabel = formatDurationLabel(payload.durationMs);
       state.form.trackAsset = state.form.trackAsset || state.draft.id;
       setStatus(`音频提取完成，已生成 ${state.draft.audioSrc}`, 'success');
-      pushActivity(`音频提取完成：${state.draft.audioSrc}`, 'success');
+      pushActivity(`音频提取完成：${payload.storage === 'remote' ? '已上传远程存储' : state.draft.audioSrc}`, 'success');
     });
   });
 
@@ -949,7 +949,7 @@ function bindEvents() {
       state.draft.trackSvgSrc = payload.trackSvgSrc;
       state.draft.trackVectorSource = `F1DB 本地赛道 SVG · ${payload.circuitName} · ${payload.layoutId}`;
       setStatus(`已匹配并导入赛道图：${payload.circuitName} (${payload.layoutId})。下方预览已更新。`, 'success');
-      pushActivity(`赛道图已匹配：${payload.circuitName} (${payload.layoutId})`, 'success');
+      pushActivity(`赛道图已匹配：${payload.circuitName} (${payload.storage === 'remote' ? '远程已同步' : payload.layoutId})`, 'success');
     });
   });
 
@@ -985,7 +985,7 @@ function bindEvents() {
       state.draft.telemetryCarDataSrc = payload.telemetryCarDataSrc;
       state.draft.telemetrySource = 'OpenF1 官方 location + car_data';
       setStatus(`遥测数据导入完成：场次 ${sessionKey}，第 ${selectedLapNumber} 圈，${payload.locationPoints} 个位置点，${payload.carSamples} 个车辆数据点。`, 'success');
-      pushActivity(`遥测已导入：场次 ${sessionKey} · 第 ${selectedLapNumber} 圈`, 'success');
+      pushActivity(`遥测已导入：场次 ${sessionKey} · 第 ${selectedLapNumber} 圈${payload.storage === 'remote' ? ' · 远程已同步' : ''}`, 'success');
     });
   });
 }
