@@ -9,7 +9,7 @@ import {
   normalizeTelemetryPoints,
   toElapsedSamples
 } from '../lib/telemetry-utils.js';
-import { playDutchAnthemSting } from './anthem.js';
+import { playResultAudioCue } from './anthem.js';
 import { isChallengeAnswerCorrect } from './answer-utils.js';
 import {
   DUEL_POOL,
@@ -226,7 +226,7 @@ export default function App({ initialLibrary }) {
       return undefined;
     }
 
-    return playDutchAnthemSting();
+    return playResultAudioCue(result);
   }, [result]);
 
   const currentBenchmarkMs = challenge?.benchmarkMs ?? 0;
@@ -358,7 +358,7 @@ export default function App({ initialLibrary }) {
   }
 
   return (
-    <PosterStage challenge={challenge} result={result}>
+    <PosterStage challenge={challenge} result={result} runState={runState}>
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_380px] xl:items-start">
         <div className="grid gap-5">
           <header className="glass-panel overflow-hidden rounded-[32px] border border-white/12 p-5 sm:p-7 lg:p-8">

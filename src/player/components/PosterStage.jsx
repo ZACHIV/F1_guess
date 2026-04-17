@@ -1,6 +1,7 @@
+import TeamRadioBarrage from './TeamRadioBarrage.jsx';
 import VerstappenVictoryOverlay from './VerstappenVictoryOverlay.jsx';
 
-export default function PosterStage({ challenge, result, children }) {
+export default function PosterStage({ challenge, result, runState, children }) {
   const posterSrc = challenge.posterSrc || '/assets/max-verstappen.jpg';
   const hasLoss = result?.outcome === 'lose' || result?.outcome === 'timeout';
   const hasWin = result?.outcome === 'win';
@@ -28,6 +29,7 @@ export default function PosterStage({ challenge, result, children }) {
       </div>
       <div className="duel-stage__wash absolute inset-0" />
       <div className="duel-stage__vignette absolute inset-0" />
+      <TeamRadioBarrage result={result} runState={runState} />
       <VerstappenVictoryOverlay challenge={challenge} result={result} />
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(4,5,7,0.16)_40%,rgba(4,5,7,0.82)_100%)]" />

@@ -284,6 +284,92 @@ select {
   background: radial-gradient(circle, rgba(134, 248, 179, 0.22), transparent 60%);
 }
 
+.team-radio-barrage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.team-radio-barrage__item {
+  position: absolute;
+  left: 100%;
+  top: var(--barrage-top);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(34rem, calc(100vw - 2rem));
+  padding: 0.72rem 1rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(7, 11, 18, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 42px rgba(0, 0, 0, 0.24);
+  white-space: nowrap;
+  animation: barrageTraverse var(--barrage-duration) linear forwards;
+}
+
+.team-radio-barrage__item[data-accent='heat'] {
+  border-color: rgba(255, 173, 115, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 42px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(255, 137, 53, 0.06);
+}
+
+.team-radio-barrage__item[data-accent='ice'] {
+  border-color: rgba(155, 195, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 42px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(130, 184, 255, 0.08);
+}
+
+.team-radio-barrage__item[data-accent='max'] {
+  border-color: rgba(255, 205, 152, 0.24);
+  background:
+    linear-gradient(90deg, rgba(255, 168, 92, 0.2), rgba(255, 255, 255, 0.02)),
+    rgba(22, 10, 5, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 247, 236, 0.06),
+    0 22px 56px rgba(0, 0, 0, 0.28),
+    0 0 24px rgba(255, 144, 52, 0.14);
+}
+
+.team-radio-barrage__driver {
+  flex: none;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(214, 219, 233, 0.68);
+}
+
+.team-radio-barrage__item[data-accent='max'] .team-radio-barrage__driver {
+  color: rgba(255, 226, 188, 0.72);
+}
+
+.team-radio-barrage__quote {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: rgba(247, 249, 252, 0.94);
+  text-shadow: 0 0 18px rgba(255, 255, 255, 0.04);
+}
+
+.team-radio-barrage--max-win .team-radio-barrage__quote {
+  color: rgba(255, 239, 223, 0.96);
+  text-shadow: 0 0 22px rgba(255, 148, 66, 0.12);
+}
+
 .verstappen-takeover {
   opacity: 0;
   position: absolute;
@@ -595,6 +681,23 @@ select {
   transform: translateY(14px);
 }
 
+@keyframes barrageTraverse {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.98);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate3d(-6vw, 0, 0) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(-118vw - 100%), 0, 0) scale(1);
+  }
+}
+
 @keyframes waveformPulse {
   0%,
   100% {
@@ -799,6 +902,21 @@ select {
 
   .waveform-reactive {
     gap: 2px;
+  }
+
+  .team-radio-barrage__item {
+    gap: 0.55rem;
+    max-width: calc(100vw - 1rem);
+    padding: 0.6rem 0.8rem 0.66rem;
+  }
+
+  .team-radio-barrage__driver {
+    font-size: 0.54rem;
+    letter-spacing: 0.18em;
+  }
+
+  .team-radio-barrage__quote {
+    font-size: 0.92rem;
   }
 
   .verstappen-takeover__panel {

@@ -25,14 +25,53 @@ const WILHELMUS_STING = [
   ['C4', 0.5]
 ];
 
+function createNoopCleanup() {
+  return () => {};
+}
+
+function playAudioAsset(src, options = {}) {
+  if (typeof window === 'undefined') {
+    return createNoopCleanup();
+  }
+
+  if (!src) {
+    return createNoopCleanup();
+  }
+
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.volume = Math.max(0, Math.min(1, options.volume ?? 1));
+  audio.loop = Boolean(options.loop);
+  void audio.play().catch(() => {});
+
+  return () => {
+    audio.pause();
+    audio.currentTime = 0;
+  };
+}
+
+export const RESULT_AUDIO_CUES = {
+  maxWin: {
+    id: 'max-win',
+    layers: [
+      { id: 'max-simply-lovely', src: '', volume: 0.94 }
+    ]
+  }
+};
+
+export const AUXILIARY_AUDIO_ASSETS = {
+  dutchAnthem: { id: 'dutch-anthem', src: '', volume: 0.8 },
+  maxChant: { id: 'max-chant', src: '', volume: 0.88 }
+};
+
 export function playDutchAnthemSting() {
   if (typeof window === 'undefined') {
-    return () => {};
+    return createNoopCleanup();
   }
 
   const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextCtor) {
-    return () => {};
+    return createNoopCleanup();
   }
 
   const context = new AudioContextCtor();
@@ -75,4 +114,26 @@ export function playDutchAnthemSting() {
 
   window.setTimeout(closeContext, Math.ceil((cursor - context.currentTime) * 1000) + 120);
   return closeContext;
+}
+
+export function playResultAudioCue(result) {
+  if (!result || result.outcome === 'win') {
+    return createNoopCleanup();
+  }
+
+  const cue = RESULT_AUDIO_CUES.maxWin;
+  const cleanupHandlers = [];
+  const configuredLayers = cue.layers.filter((layer) => layer.src);
+
+  if (!configuredLayers.length) {
+    return playDutchAnthemSting();
+  }
+
+  configuredLayers.forEach((layer) => {
+    cleanupHandlers.push(playAudioAsset(layer.src, layer));
+  });
+
+  return () => {
+    cleanupHandlers.forEach((cleanup) => cleanup());
+  };
 }
