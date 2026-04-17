@@ -1,3 +1,5 @@
+import VerstappenVictoryOverlay from './VerstappenVictoryOverlay.jsx';
+
 export default function PosterStage({ challenge, result, children }) {
   const posterSrc = challenge.posterSrc || '/assets/max-verstappen.jpg';
   const hasLoss = result?.outcome === 'lose' || result?.outcome === 'timeout';
@@ -26,7 +28,7 @@ export default function PosterStage({ challenge, result, children }) {
       </div>
       <div className="duel-stage__wash absolute inset-0" />
       <div className="duel-stage__vignette absolute inset-0" />
-      {hasLoss ? <div className="verstappen-takeover pointer-events-none absolute inset-0" /> : null}
+      <VerstappenVictoryOverlay challenge={challenge} result={result} />
 
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_0%,rgba(4,5,7,0.16)_40%,rgba(4,5,7,0.82)_100%)]" />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1380px] flex-col px-4 pb-8 pt-6 sm:px-6 lg:px-8">
