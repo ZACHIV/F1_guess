@@ -42,29 +42,49 @@ function playAudioAsset(src, options = {}) {
   audio.preload = 'auto';
   audio.volume = Math.max(0, Math.min(1, options.volume ?? 1));
   audio.loop = Boolean(options.loop);
-  void audio.play().catch(() => {});
+  if (typeof options.onEnded === 'function') {
+    audio.onended = () => {
+      options.onEnded();
+    };
+  }
+  const playback = audio.play?.();
+  if (playback && typeof playback.catch === 'function') {
+    void playback.catch(() => {});
+  }
 
   return () => {
+    audio.onended = null;
     audio.pause();
     audio.currentTime = 0;
   };
 }
 
+const SIMPLY_LOVELY_SRC = '/audio/Team Radio/verstappen-simply-lovely.mp3';
+const DUTCH_ANTHEM_SRC = '/audio/荷兰国歌.mp3';
+
 export const RESULT_AUDIO_CUES = {
   maxWin: {
     id: 'max-win',
     layers: [
-      { id: 'max-simply-lovely', src: '', volume: 0.94 }
+      { id: 'max-simply-lovely', src: SIMPLY_LOVELY_SRC, volume: 0.94 },
+      { id: 'dutch-anthem', src: DUTCH_ANTHEM_SRC, volume: 0.8 }
     ]
   }
 };
 
 export const AUXILIARY_AUDIO_ASSETS = {
-  dutchAnthem: { id: 'dutch-anthem', src: '', volume: 0.8 },
-  maxChant: { id: 'max-chant', src: '', volume: 0.88 }
+  dutchAnthem: { id: 'dutch-anthem', src: DUTCH_ANTHEM_SRC, volume: 0.8 },
+  maxChant: { id: 'max-chant', src: SIMPLY_LOVELY_SRC, volume: 0.88 }
 };
 
 export function playDutchAnthemSting() {
+  if (AUXILIARY_AUDIO_ASSETS.dutchAnthem.src) {
+    return playAudioAsset(
+      AUXILIARY_AUDIO_ASSETS.dutchAnthem.src,
+      AUXILIARY_AUDIO_ASSETS.dutchAnthem
+    );
+  }
+
   if (typeof window === 'undefined') {
     return createNoopCleanup();
   }
@@ -116,24 +136,58 @@ export function playDutchAnthemSting() {
   return closeContext;
 }
 
+function playAudioSequence(layers, options = {}) {
+  const queue = layers.filter((layer) => layer?.src);
+  const fallback = options.fallback ?? createNoopCleanup;
+
+  if (!queue.length) {
+    return fallback();
+  }
+
+  let stopped = false;
+  let activeCleanup = createNoopCleanup();
+  let fallbackCleanup = createNoopCleanup();
+
+  const playLayerAt = (index) => {
+    if (stopped) {
+      return;
+    }
+
+    if (index >= queue.length) {
+      fallbackCleanup = fallback();
+      return;
+    }
+
+    const layer = queue[index];
+    activeCleanup = playAudioAsset(layer.src, {
+      ...layer,
+      onEnded: () => {
+        activeCleanup();
+        playLayerAt(index + 1);
+      }
+    });
+  };
+
+  playLayerAt(0);
+
+  return () => {
+    stopped = true;
+    activeCleanup();
+    fallbackCleanup();
+  };
+}
+
 export function playResultAudioCue(result) {
   if (!result || result.outcome === 'win') {
     return createNoopCleanup();
   }
 
   const cue = RESULT_AUDIO_CUES.maxWin;
-  const cleanupHandlers = [];
   const configuredLayers = cue.layers.filter((layer) => layer.src);
 
-  if (!configuredLayers.length) {
-    return playDutchAnthemSting();
-  }
-
-  configuredLayers.forEach((layer) => {
-    cleanupHandlers.push(playAudioAsset(layer.src, layer));
+  return playAudioSequence(configuredLayers, {
+    fallback: configuredLayers.some((layer) => layer.id === 'dutch-anthem')
+      ? createNoopCleanup
+      : playDutchAnthemSting
   });
-
-  return () => {
-    cleanupHandlers.forEach((cleanup) => cleanup());
-  };
 }
