@@ -11,10 +11,12 @@ import TrackHUD from './TrackHUD.jsx';
 
 export default function ResultReviewPage({
   canReplay,
+  canMuteAnthem = false,
   challenge,
   dimensions,
   marker,
   onNextChallenge,
+  onMuteAnthem,
   onReplayAudio,
   onRetry,
   onToggleLocale,
@@ -81,11 +83,20 @@ export default function ResultReviewPage({
               >
                 {t(locale, 'replayAudio')}
               </button>
+              {canMuteAnthem ? (
+                <button
+                  className="rounded-full border border-[#ff8b59]/22 bg-[#ff6d2f]/10 px-5 py-3 text-sm font-medium text-[#ffd8c8] transition hover:bg-[#ff6d2f]/16"
+                  onClick={onMuteAnthem}
+                  type="button"
+                >
+                  {t(locale, 'muteAnthem')}
+                </button>
+              ) : null}
             </div>
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_320px]">
+        <section className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.35fr)_300px]">
           <TrackHUD
             challenge={challenge}
             dimensions={dimensions}

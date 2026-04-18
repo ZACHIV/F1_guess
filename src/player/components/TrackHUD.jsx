@@ -20,12 +20,12 @@ export default function TrackHUD({
 
   return (
     <section
-      className="glass-panel relative overflow-hidden rounded-[30px] border border-white/12 p-4"
+      className="glass-panel relative flex min-h-[560px] flex-col overflow-hidden rounded-[30px] border border-white/12 p-4 lg:min-h-[620px]"
       data-testid="track-hud"
     >
       <div className="absolute left-4 top-4 h-24 w-24 rounded-full bg-orange-500/20 blur-3xl" />
       <div className="absolute right-4 top-6 h-20 w-20 rounded-full bg-sky-400/20 blur-3xl" />
-      <div className="relative">
+      <div className="relative flex flex-1 flex-col">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
             <p className="hud-label">{headerLabel}</p>
@@ -43,15 +43,14 @@ export default function TrackHUD({
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,8,12,0.9),rgba(11,16,24,0.66))] p-4">
-          <img
-            alt={`${trackName} reference`}
-            className="absolute inset-0 h-full w-full object-contain p-4 opacity-[0.08] invert"
-            src={challenge.trackSvgSrc}
-          />
+        <div
+          className="track-hud__viewport relative flex-1 overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,8,12,0.9),rgba(11,16,24,0.66))] p-4"
+          data-testid="track-hud-viewport"
+        >
           <svg
-            className="relative z-10 h-[240px] w-full"
+            className="relative z-10 h-full min-h-[320px] w-full lg:min-h-[420px]"
             viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+            preserveAspectRatio="xMidYMid meet"
           >
             <path
               className="fill-none stroke-white/10"

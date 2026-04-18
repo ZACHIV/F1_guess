@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AUXILIARY_AUDIO_ASSETS, RESULT_AUDIO_CUES, playResultAudioCue } from '../src/player/anthem.js';
+import {
+  AUXILIARY_AUDIO_ASSETS,
+  RESULT_AUDIO_CUES,
+  muteDutchAnthemPlayback,
+  playResultAudioCue,
+  resetResultAudioState
+} from '../src/player/anthem.js';
 
 describe('result audio cues', () => {
   afterEach(() => {
+    resetResultAudioState();
     vi.restoreAllMocks();
   });
 
@@ -81,6 +88,59 @@ describe('result audio cues', () => {
   it('returns a cleanup function for non-winning outcomes', () => {
     const cleanup = playResultAudioCue({ outcome: 'lose' });
     expect(typeof cleanup).toBe('function');
+  });
+
+  it('mutes the active Dutch anthem layer without stopping the sequence', async () => {
+    const audioInstances = [];
+    const AudioMock = vi.fn((src) => {
+      const audio = {
+        src,
+        preload: '',
+        volume: 1,
+        loop: false,
+        play: vi.fn(() => Promise.resolve()),
+        pause: vi.fn(),
+        currentTime: 12,
+        onended: null
+      };
+      audioInstances.push(audio);
+      return audio;
+    });
+
+    vi.stubGlobal('Audio', AudioMock);
+
+    playResultAudioCue({ outcome: 'lose' });
+    await audioInstances[0].onended?.();
+    muteDutchAnthemPlayback();
+
+    expect(audioInstances[1].pause).not.toHaveBeenCalled();
+    expect(audioInstances[1].volume).toBe(0);
+  });
+
+  it('keeps the Dutch anthem muted if mute is requested before that layer starts', async () => {
+    const audioInstances = [];
+    const AudioMock = vi.fn((src) => {
+      const audio = {
+        src,
+        preload: '',
+        volume: 1,
+        loop: false,
+        play: vi.fn(() => Promise.resolve()),
+        pause: vi.fn(),
+        currentTime: 0,
+        onended: null
+      };
+      audioInstances.push(audio);
+      return audio;
+    });
+
+    vi.stubGlobal('Audio', AudioMock);
+
+    playResultAudioCue({ outcome: 'timeout' });
+    muteDutchAnthemPlayback();
+    await audioInstances[0].onended?.();
+
+    expect(audioInstances[1].volume).toBe(0);
   });
 
   it('keeps the anthem and chant assets available for other flows', () => {
