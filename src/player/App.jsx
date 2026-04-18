@@ -4,6 +4,8 @@ import { loadChallengeTelemetry } from '../lib/challenge-assets.js';
 import { normalizeChallenge } from '../lib/challenge-utils.js';
 import {
   buildTelemetryPath,
+  buildTelemetryProgressPath,
+  buildTelemetryTrailPath,
   getInterpolatedTelemetryPoint,
   getNearestTelemetrySample,
   normalizeTelemetryPoints,
@@ -295,7 +297,14 @@ export default function App({ initialLibrary }) {
   const currentBenchmarkMs = challenge?.benchmarkMs ?? 0;
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
   const displayElapsedMs = result?.playerTimeMs ?? sessionElapsedMs;
+  const telemetryElapsedMs = challenge ? getSynchronizedElapsedMs(currentTime, challenge) : 0;
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
+  const telemetryProgressPath = telemetryModel
+    ? buildTelemetryProgressPath(telemetryModel.locationFrames, telemetryElapsedMs)
+    : '';
+  const telemetryTrailPath = telemetryModel
+    ? buildTelemetryTrailPath(telemetryModel.locationFrames, telemetryElapsedMs, 1800)
+    : '';
   const activeWaveform = result ? reviewWaveform : liveWaveform;
 
   const playFromStart = useEffectEvent(async () => {
@@ -487,7 +496,9 @@ export default function App({ initialLibrary }) {
           onRetry={handleRetry}
           onToggleLocale={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
           result={result}
+          telemetryProgressPath={telemetryProgressPath}
           telemetryPath={telemetryPath}
+          telemetryTrailPath={telemetryTrailPath}
         />
       </>
     );
@@ -506,16 +517,17 @@ export default function App({ initialLibrary }) {
         onTimeUpdate={setCurrentTime}
       />
 
-      <div className="flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
-        <div className="flex justify-end">
-          <button
-            className="rounded-full border border-white/20 bg-black/24 px-4 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36"
-            onClick={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
-            type="button"
-          >
-            {getLanguageBadge(locale)}
-          </button>
-        </div>
+      <div className="duel-stage__language-switch">
+        <button
+          className="rounded-full border border-white/20 bg-black/24 px-4 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36"
+          onClick={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
+          type="button"
+        >
+          {getLanguageBadge(locale)}
+        </button>
+      </div>
+
+      <div className="relative flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
         <section className="duel-stage__hero pointer-events-none px-1">
           <h1 className="duel-stage__hero-title hero-display">Can You Beat Max?</h1>
         </section>

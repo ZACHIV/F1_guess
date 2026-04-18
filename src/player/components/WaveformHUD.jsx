@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef } from 'react';
-import { mountWaveform } from '../../lib/waveform.js';
+import { mountRealtimeOscilloscope, mountWaveform } from '../../lib/waveform.js';
 
 export default function WaveformHUD({
   audioSrc,
@@ -10,6 +10,7 @@ export default function WaveformHUD({
   onFinish
 }) {
   const waveformRef = useRef(null);
+  const oscilloscopeRef = useRef(null);
   const emitReady = useEffectEvent((value) => onReady?.(value));
   const emitPlayStateChange = useEffectEvent((value) => onPlayStateChange?.(value));
   const emitTimeUpdate = useEffectEvent((value) => onTimeUpdate?.(value));
@@ -29,6 +30,14 @@ export default function WaveformHUD({
       emitReady(null);
       return undefined;
     }
+
+    const oscilloscope = mountRealtimeOscilloscope(
+      oscilloscopeRef.current,
+      typeof waveform.getMediaElement === 'function' ? waveform.getMediaElement() : null,
+      {
+        height: 64
+      }
+    );
 
     emitReady(waveform);
 
@@ -50,6 +59,7 @@ export default function WaveformHUD({
     });
 
     return () => {
+      oscilloscope?.destroy?.();
       waveform.destroy();
       emitReady(null);
     };
@@ -59,12 +69,22 @@ export default function WaveformHUD({
     <section
       className={hidden
         ? 'waveform-hud--hidden'
-        : 'poster-waveform pointer-events-none px-11 pt-14 sm:px-14 sm:pt-16'}
+        : 'poster-waveform pointer-events-none px-5 pt-12 sm:px-7 sm:pt-14'}
       data-testid="waveform-hud"
     >
       <div className="poster-waveform__glow" />
       <div className="poster-waveform__shell">
-        <div className="poster-waveform__canvas" ref={waveformRef} />
+        <div className="poster-waveform__fallback-line" aria-hidden />
+        <canvas
+          className="poster-waveform__oscilloscope"
+          data-testid="waveform-oscilloscope"
+          ref={oscilloscopeRef}
+        />
+        <div
+          aria-hidden="true"
+          className="poster-waveform__transport"
+          ref={waveformRef}
+        />
       </div>
     </section>
   );

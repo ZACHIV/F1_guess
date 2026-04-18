@@ -11,18 +11,22 @@ const stop = vi.fn();
 const setTime = vi.fn();
 const destroy = vi.fn();
 
-vi.mock('../src/lib/waveform.js', () => ({
-  mountWaveform: () => ({
-    play,
-    pause,
-    stop,
-    setTime,
-    destroy,
-    on: (event, handler) => {
-      waveformHandlers.set(event, handler);
-    }
-  })
-}));
+vi.mock('../src/lib/waveform.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    mountWaveform: () => ({
+      play,
+      pause,
+      stop,
+      setTime,
+      destroy,
+      on: (event, handler) => {
+        waveformHandlers.set(event, handler);
+      }
+    })
+  };
+});
 
 describe('live playback controls', () => {
   afterEach(() => {

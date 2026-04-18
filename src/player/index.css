@@ -108,7 +108,10 @@ select {
   display: grid;
   place-items: center;
   margin: 0 auto;
-  padding-top: 0.5rem;
+  margin-top: -3.4rem;
+  padding-top: 0;
+  position: relative;
+  z-index: 4;
   text-align: center;
 }
 
@@ -119,6 +122,14 @@ select {
   letter-spacing: -0.08em;
   color: rgba(249, 250, 252, 0.97);
   text-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.duel-stage__language-switch {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 8;
+  pointer-events: auto;
 }
 
 .duel-stage__control-cluster {
@@ -151,31 +162,50 @@ select {
 .poster-waveform__glow {
   position: absolute;
   left: 50%;
-  top: 64px;
-  width: 54%;
-  height: 16px;
+  top: 78px;
+  width: 68%;
+  height: 28px;
   transform: translateX(-50%);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
-  filter: blur(18px);
-  opacity: 0.32;
+  filter: blur(20px);
+  opacity: 0.34;
 }
 
 .poster-waveform__shell {
   position: relative;
-  width: min(100%, 278px);
+  width: min(100%, 352px);
   margin: 0 auto;
+  min-height: 82px;
 }
 
-.poster-waveform__canvas {
-  min-height: 32px;
-  opacity: 0.96;
+.poster-waveform__fallback-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  opacity: 0.5;
 }
 
-.poster-waveform__canvas canvas {
+.poster-waveform__oscilloscope {
+  position: relative;
+  display: block;
   width: 100% !important;
-  opacity: 0.92;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.18));
+  height: 82px !important;
+  opacity: 0.95;
+  filter:
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.16))
+    drop-shadow(0 0 18px rgba(255, 120, 54, 0.14));
+}
+
+.poster-waveform__transport {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .poster-timer {
@@ -239,7 +269,12 @@ select {
 
 @media (max-width: 520px) {
   .duel-stage__hero {
-    padding-top: 0.2rem;
+    margin-top: -3.9rem;
+  }
+
+  .duel-stage__language-switch {
+    top: 0.9rem;
+    right: 0.9rem;
   }
 
   .poster-timer__ring {
@@ -253,6 +288,73 @@ select {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 24px 60px rgba(0, 0, 0, 0.22);
+}
+
+.track-hud__shadow {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.track-hud__shell {
+  fill: none;
+  stroke: rgba(95, 118, 146, 0.38);
+}
+
+.track-hud__base {
+  fill: none;
+  stroke: rgba(246, 249, 252, 0.88);
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.18));
+}
+
+.track-hud__trail {
+  fill: none;
+  stroke: rgba(255, 122, 66, 0.24);
+  filter: drop-shadow(0 0 12px rgba(255, 122, 66, 0.16));
+}
+
+.track-hud__progress {
+  fill: none;
+  stroke: #ff7a42;
+  filter: drop-shadow(0 0 12px rgba(255, 122, 66, 0.42));
+}
+
+.track-hud__start {
+  fill: rgba(255, 255, 255, 0.74);
+}
+
+.track-hud__marker-pulse {
+  fill: rgba(255, 122, 66, 0.18);
+  animation: trackHudPulse 1.6s ease-out infinite;
+  transform-origin: center;
+}
+
+.track-hud__marker-halo {
+  fill: rgba(255, 122, 66, 0.3);
+  stroke: rgba(255, 241, 232, 0.78);
+  stroke-width: 1.5;
+}
+
+.track-hud__marker-core {
+  fill: #ff6d2f;
+  stroke: #fff2e8;
+  stroke-width: 1.6;
+}
+
+@keyframes trackHudPulse {
+  0% {
+    opacity: 0.88;
+    transform: scale(0.82);
+  }
+
+  70% {
+    opacity: 0.14;
+    transform: scale(1.12);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
 }
 
 .team-radio-barrage {
