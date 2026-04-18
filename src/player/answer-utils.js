@@ -1,5 +1,32 @@
+import {
+  COUNTRY_NAME_ZH,
+  TRACK_NAME_ZH
+} from './track-locales.js';
+
 function unique(values) {
   return [...new Set(values)];
+}
+
+function buildChineseVariants(value) {
+  if (!value) {
+    return [];
+  }
+
+  const compact = String(value).trim();
+  if (!compact) {
+    return [];
+  }
+
+  return unique([
+    compact,
+    compact.replace(/国际赛车场/g, ''),
+    compact.replace(/国际赛道/g, ''),
+    compact.replace(/城市赛道/g, ''),
+    compact.replace(/滨海赛道/g, ''),
+    compact.replace(/大道赛道/g, ''),
+    compact.replace(/赛道/g, ''),
+    compact.replace(/赛车场/g, '')
+  ].map((item) => item.trim()).filter(Boolean));
 }
 
 export function normalizeAnswer(value) {
@@ -8,15 +35,23 @@ export function normalizeAnswer(value) {
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 export function getAcceptedAnswers(challenge) {
+  const trackName = challenge?.trackName || '';
+  const countryName = challenge?.trackCountry || '';
+  const trackZh = TRACK_NAME_ZH[trackName];
+  const countryZh = COUNTRY_NAME_ZH[countryName];
+
   return unique([
-    challenge?.trackName,
-    challenge?.trackCountry,
+    trackName,
+    countryName,
+    ...buildChineseVariants(trackZh),
+    ...buildChineseVariants(countryZh),
+    ...(Array.isArray(challenge?.zhAliases) ? challenge.zhAliases.flatMap(buildChineseVariants) : []),
     ...(Array.isArray(challenge?.answerAliases) ? challenge.answerAliases : [])
   ].map(normalizeAnswer).filter(Boolean));
 }

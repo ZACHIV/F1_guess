@@ -41,7 +41,12 @@
     ],
     "createdAt": "2025-03-16",
     "updatedAt": "2026-04-16T17:12:32.459Z",
-    "sortOrder": 0
+    "sortOrder": 0,
+    "zhAliases": [
+      "阿尔伯特公园",
+      "墨尔本",
+      "墨尔本赛道"
+    ]
   },
   {
     "id": "china-quali-oscar-piastri-2025",
@@ -85,7 +90,13 @@
     ],
     "createdAt": "2025-03-23",
     "updatedAt": "2026-04-16T17:12:41.959Z",
-    "sortOrder": 1
+    "sortOrder": 1,
+    "zhAliases": [
+      "上海国际赛车场",
+      "上赛",
+      "上赛道",
+      "上海"
+    ]
   },
   {
     "id": "japan-quali-max-verstappen-2025",
@@ -128,7 +139,11 @@
     ],
     "createdAt": "2025-04-06",
     "updatedAt": "2026-04-16T17:12:53.930Z",
-    "sortOrder": 2
+    "sortOrder": 2,
+    "zhAliases": [
+      "铃鹿",
+      "铃鹿赛道"
+    ]
   },
   {
     "id": "bahrain-quali-oscar-piastri-2025",
@@ -172,7 +187,12 @@
     ],
     "createdAt": "2025-04-13",
     "updatedAt": "2026-04-16T17:13:06.705Z",
-    "sortOrder": 3
+    "sortOrder": 3,
+    "zhAliases": [
+      "巴林国际赛道",
+      "萨基尔",
+      "萨基尔赛道"
+    ]
   },
   {
     "id": "saudi-arabia-quali-max-verstappen-2025",
@@ -216,7 +236,12 @@
     ],
     "createdAt": "2025-04-20",
     "updatedAt": "2026-04-16T17:13:18.907Z",
-    "sortOrder": 4
+    "sortOrder": 4,
+    "zhAliases": [
+      "吉达滨海赛道",
+      "吉达",
+      "吉达赛道"
+    ]
   },
   {
     "id": "miami-quali-max-verstappen-2025",
@@ -261,7 +286,12 @@
     ],
     "createdAt": "2025-05-04",
     "updatedAt": "2026-04-16T17:13:31.236Z",
-    "sortOrder": 5
+    "sortOrder": 5,
+    "zhAliases": [
+      "迈阿密国际赛道",
+      "迈阿密",
+      "迈阿密赛道"
+    ]
   },
   {
     "id": "imola-quali-oscar-piastri-2025",
@@ -306,7 +336,12 @@
     ],
     "createdAt": "2025-05-18",
     "updatedAt": "2026-04-16T17:13:40.666Z",
-    "sortOrder": 6
+    "sortOrder": 6,
+    "zhAliases": [
+      "伊莫拉",
+      "伊莫拉赛道",
+      "安佐与迪诺法拉利赛道"
+    ]
   },
   {
     "id": "monaco-quali-lando-norris-2025",
@@ -350,7 +385,12 @@
     ],
     "createdAt": "2025-05-25",
     "updatedAt": "2026-04-16T17:13:52.907Z",
-    "sortOrder": 7
+    "sortOrder": 7,
+    "zhAliases": [
+      "摩纳哥赛道",
+      "摩纳哥",
+      "蒙特卡洛"
+    ]
   },
   {
     "id": "spain-quali-oscar-piastri-2025",
@@ -395,7 +435,13 @@
     ],
     "createdAt": "2025-06-01",
     "updatedAt": "2026-04-16T17:14:02.020Z",
-    "sortOrder": 8
+    "sortOrder": 8,
+    "zhAliases": [
+      "巴塞罗那赛道",
+      "巴塞罗那",
+      "加泰罗尼亚赛道",
+      "加泰罗尼亚"
+    ]
   },
   {
     "id": "canada-quali-george-russell-2025",
@@ -440,7 +486,12 @@
     ],
     "createdAt": "2025-06-15",
     "updatedAt": "2026-04-16T17:14:11.144Z",
-    "sortOrder": 9
+    "sortOrder": 9,
+    "zhAliases": [
+      "维伦纽夫赛道",
+      "维伦纽夫",
+      "蒙特利尔"
+    ]
   },
   {
     "id": "austria-quali-lando-norris-2025",
@@ -484,7 +535,12 @@
     ],
     "createdAt": "2025-06-29",
     "updatedAt": "2026-04-16T17:14:21.468Z",
-    "sortOrder": 10
+    "sortOrder": 10,
+    "zhAliases": [
+      "红牛环",
+      "红牛环赛道",
+      "斯皮尔伯格"
+    ]
   },
   {
     "id": "great-britain-quali-max-verstappen-2025",
@@ -528,7 +584,11 @@
     ],
     "createdAt": "2025-07-06",
     "updatedAt": "2026-04-16T17:14:38.965Z",
-    "sortOrder": 11
+    "sortOrder": 11,
+    "zhAliases": [
+      "银石",
+      "银石赛道"
+    ]
   },
   {
     "id": "belgium-quali-lando-norris-2025",
@@ -572,7 +632,12 @@
     ],
     "createdAt": "2025-07-27",
     "updatedAt": "2026-04-16T17:14:46.903Z",
-    "sortOrder": 12
+    "sortOrder": 12,
+    "zhAliases": [
+      "斯帕",
+      "斯帕赛道",
+      "斯帕弗朗科尔尚"
+    ]
   },
   {
     "id": "hungary-quali-charles-leclerc-2025",
@@ -616,7 +681,12 @@
     ],
     "createdAt": "2025-08-03",
     "updatedAt": "2026-04-16T17:15:58.459Z",
-    "sortOrder": 13
+    "sortOrder": 13,
+    "zhAliases": [
+      "亨格罗林",
+      "亨格罗林赛道",
+      "布达佩斯"
+    ]
   },
   {
     "id": "netherlands-quali-oscar-piastri-2025",
@@ -659,7 +729,12 @@
     ],
     "createdAt": "2025-08-31",
     "updatedAt": "2026-04-16T17:16:08.034Z",
-    "sortOrder": 14
+    "sortOrder": 14,
+    "zhAliases": [
+      "赞德沃特",
+      "赞德沃特赛道",
+      "荷兰海岸赛道"
+    ]
   },
   {
     "id": "italy-quali-max-verstappen-2025",
@@ -702,7 +777,12 @@
     ],
     "createdAt": "2025-09-07",
     "updatedAt": "2026-04-16T17:16:17.584Z",
-    "sortOrder": 15
+    "sortOrder": 15,
+    "zhAliases": [
+      "蒙扎",
+      "蒙扎赛道",
+      "意大利国家赛车场"
+    ]
   },
   {
     "id": "azerbaijan-quali-max-verstappen-2025",
@@ -746,7 +826,12 @@
     ],
     "createdAt": "2025-09-21",
     "updatedAt": "2026-04-16T17:16:19.326Z",
-    "sortOrder": 16
+    "sortOrder": 16,
+    "zhAliases": [
+      "巴库",
+      "巴库赛道",
+      "巴库城市赛道"
+    ]
   },
   {
     "id": "singapore-quali-george-russell-2025",
@@ -789,7 +874,12 @@
     ],
     "createdAt": "2025-10-05",
     "updatedAt": "2026-04-16T17:16:27.172Z",
-    "sortOrder": 17
+    "sortOrder": 17,
+    "zhAliases": [
+      "滨海湾",
+      "滨海湾赛道",
+      "新加坡滨海湾"
+    ]
   },
   {
     "id": "united-states-quali-max-verstappen-2025",
@@ -834,7 +924,13 @@
     ],
     "createdAt": "2025-10-19",
     "updatedAt": "2026-04-16T17:16:35.823Z",
-    "sortOrder": 18
+    "sortOrder": 18,
+    "zhAliases": [
+      "美洲赛道",
+      "奥斯汀",
+      "奥斯汀赛道",
+      "科塔"
+    ]
   },
   {
     "id": "mexico-quali-lando-norris-2025",
@@ -879,7 +975,13 @@
     ],
     "createdAt": "2025-10-26",
     "updatedAt": "2026-04-16T17:16:45.226Z",
-    "sortOrder": 19
+    "sortOrder": 19,
+    "zhAliases": [
+      "罗德里格斯兄弟赛道",
+      "罗德里格斯兄弟",
+      "墨西哥城",
+      "墨西哥城赛道"
+    ]
   },
   {
     "id": "brazil-quali-lando-norris-2025",
@@ -923,7 +1025,12 @@
     ],
     "createdAt": "2025-11-09",
     "updatedAt": "2026-04-16T17:17:58.149Z",
-    "sortOrder": 20
+    "sortOrder": 20,
+    "zhAliases": [
+      "英特拉格斯",
+      "英特拉格斯赛道",
+      "圣保罗"
+    ]
   },
   {
     "id": "las-vegas-quali-lando-norris-2025",
@@ -968,7 +1075,13 @@
     ],
     "createdAt": "2025-11-22",
     "updatedAt": "2026-04-16T17:18:09.060Z",
-    "sortOrder": 21
+    "sortOrder": 21,
+    "zhAliases": [
+      "拉斯维加斯大道赛道",
+      "拉斯维加斯大道",
+      "拉斯维加斯",
+      "拉斯维加斯赛道"
+    ]
   },
   {
     "id": "qatar-quali-oscar-piastri-2025",
@@ -1012,7 +1125,12 @@
     ],
     "createdAt": "2025-11-30",
     "updatedAt": "2026-04-16T17:18:17.232Z",
-    "sortOrder": 22
+    "sortOrder": 22,
+    "zhAliases": [
+      "卢赛尔",
+      "卢赛尔赛道",
+      "卡塔尔赛道"
+    ]
   },
   {
     "id": "abu-dhabi-quali-max-verstappen-2025",
@@ -1058,6 +1176,11 @@
     ],
     "createdAt": "2025-12-07",
     "updatedAt": "2026-04-16T17:18:26.749Z",
-    "sortOrder": 23
+    "sortOrder": 23,
+    "zhAliases": [
+      "亚斯码头",
+      "亚斯码头赛道",
+      "阿布扎比"
+    ]
   }
 ]

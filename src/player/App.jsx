@@ -21,6 +21,12 @@ import ResultReviewPage from './components/ResultReviewPage.jsx';
 import WaveformHUD from './components/WaveformHUD.jsx';
 import TimerRing from './components/TimerRing.jsx';
 import InteractionDock from './components/InteractionDock.jsx';
+import {
+  detectInitialLocale,
+  getLocalizedAnswerLabel,
+  getLanguageBadge,
+  t
+} from './i18n.js';
 import { getSynchronizedElapsedMs } from './sync-utils.js';
 
 const TRACK_DIMENSIONS = { width: 360, height: 250, padding: 26 };
@@ -78,19 +84,26 @@ async function loadChallengeLibrary() {
   }
 }
 
-function buildResult(challenge, outcome, playerTimeMs) {
+function buildResult(challenge, outcome, playerTimeMs, locale) {
   const benchmarkMs = challenge?.benchmarkMs ?? 0;
   const deltaMs = Math.abs(playerTimeMs - benchmarkMs);
-  const answerLabel = `${challenge.trackName} · ${challenge.trackCountry}`;
+  const answerLabel = getLocalizedAnswerLabel(challenge, locale);
+  const localizedTrackName = answerLabel.split(' · ')[0];
 
   if (outcome === 'win') {
     return {
       outcome,
       playerTimeMs,
       benchmarkMs,
-      headline: `You beat Max to ${challenge.trackName}.`,
-      copy: `Circuit revealed: ${answerLabel}. You locked the call ${formatScoreTime(deltaMs)} before Verstappen's benchmark line.`,
-      deltaLabel: `${formatScoreTime(deltaMs)} faster`
+      locale,
+      localized: {
+        headline: t(locale, 'winHeadline', { track: localizedTrackName }),
+        copy: t(locale, 'winCopy', {
+          answer: answerLabel,
+          delta: formatScoreTime(deltaMs)
+        }),
+        deltaLabel: t(locale, 'deltaFaster', { delta: formatScoreTime(deltaMs) })
+      }
     };
   }
 
@@ -99,9 +112,12 @@ function buildResult(challenge, outcome, playerTimeMs) {
       outcome,
       playerTimeMs,
       benchmarkMs,
-      headline: 'Clock out. Verstappen still takes P1.',
-      copy: `The answer was ${answerLabel}. One minute expired before the correct call landed, so the Dutch anthem gets the room.`,
-      deltaLabel: `${formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0))} behind`
+      locale,
+      localized: {
+        headline: t(locale, 'timeoutHeadline'),
+        copy: t(locale, 'timeoutCopy', { answer: answerLabel }),
+        deltaLabel: t(locale, 'deltaBehind', { delta: formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0)) })
+      }
     };
   }
 
@@ -110,9 +126,12 @@ function buildResult(challenge, outcome, playerTimeMs) {
       outcome,
       playerTimeMs,
       benchmarkMs,
-      headline: `You waved off before ${challenge.trackName}.`,
-      copy: `Correct answer: ${answerLabel}. You bailed out of the duel early, so Verstappen keeps the line.`,
-      deltaLabel: `${formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0))} behind`
+      locale,
+      localized: {
+        headline: t(locale, 'forfeitHeadline', { track: localizedTrackName }),
+        copy: t(locale, 'forfeitCopy', { answer: answerLabel }),
+        deltaLabel: t(locale, 'deltaBehind', { delta: formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0)) })
+      }
     };
   }
 
@@ -120,13 +139,17 @@ function buildResult(challenge, outcome, playerTimeMs) {
     outcome,
     playerTimeMs,
     benchmarkMs,
-    headline: `Max still called ${challenge.trackName} first.`,
-    copy: `Correct answer: ${answerLabel}. You found it, but Verstappen's line was already gone by ${formatScoreTime(deltaMs)}.`,
-    deltaLabel: `${formatScoreTime(deltaMs)} slower`
+    locale,
+    localized: {
+      headline: t(locale, 'loseHeadline', { track: localizedTrackName }),
+      copy: t(locale, 'loseCopy', { answer: answerLabel, delta: formatScoreTime(deltaMs) }),
+      deltaLabel: t(locale, 'deltaSlower', { delta: formatScoreTime(deltaMs) })
+    }
   };
 }
 
 export default function App({ initialLibrary }) {
+  const [locale, setLocale] = useState(detectInitialLocale);
   const [library, setLibrary] = useState(() => getPlayableChallenges(initialLibrary ?? fallbackChallenges));
   const [selectedChallengeId, setSelectedChallengeId] = useState(() =>
     pickRandomChallenge(getPlayableChallenges(initialLibrary ?? fallbackChallenges))?.id ?? ''
@@ -145,6 +168,12 @@ export default function App({ initialLibrary }) {
   const [runState, setRunState] = useState('idle');
   const [result, setResult] = useState(null);
   const [submitState, setSubmitState] = useState('idle');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('f1_guess_locale', locale);
+    }
+  }, [locale]);
+
   useEffect(() => {
     if (initialLibrary) {
       return undefined;
@@ -213,7 +242,7 @@ export default function App({ initialLibrary }) {
           return;
         }
 
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load challenge.');
+        setError(loadError instanceof Error ? loadError.message : t(locale, 'loadChallengeError'));
       });
 
     return () => {
@@ -234,12 +263,20 @@ export default function App({ initialLibrary }) {
   }, [challenge, currentTime, telemetryModel]);
 
   useEffect(() => {
+    if (!result || result.locale === locale) {
+      return;
+    }
+
+    setResult(buildResult(challenge, result.outcome, result.playerTimeMs, locale));
+  }, [challenge, locale, result]);
+
+  useEffect(() => {
     if (!result || result.outcome === 'win') {
       return undefined;
     }
 
     return playResultAudioCue(result);
-  }, [result]);
+  }, [challenge?.id, result?.outcome, result?.playerTimeMs]);
 
   useEffect(() => {
     if (submitState !== 'error') {
@@ -259,13 +296,11 @@ export default function App({ initialLibrary }) {
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
   const displayElapsedMs = result?.playerTimeMs ?? sessionElapsedMs;
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
-  const benchmarkLabel = formatScoreTime(currentBenchmarkMs);
-  const maxTimeLabel = formatScoreTime(MAX_GUESS_MS);
   const activeWaveform = result ? reviewWaveform : liveWaveform;
 
   const playFromStart = useEffectEvent(async () => {
     if (!activeWaveform) {
-      setError('Audio is still arming. Give the waveform a second, then start again.');
+      setError(t(locale, 'audioArmingError'));
       return false;
     }
 
@@ -287,7 +322,7 @@ export default function App({ initialLibrary }) {
       setCanResume(true);
       return true;
     } catch {
-      setError('Audio playback was blocked. Interact again to continue the duel.');
+      setError(t(locale, 'playbackBlockedError'));
       return false;
     }
   });
@@ -302,7 +337,7 @@ export default function App({ initialLibrary }) {
       setCanResume(true);
       return true;
     } catch {
-      setError('Audio playback was blocked. Interact again to continue the duel.');
+      setError(t(locale, 'playbackBlockedError'));
       return false;
     }
   });
@@ -314,7 +349,7 @@ export default function App({ initialLibrary }) {
     setFeedback(null);
     setSubmitState('idle');
     setRunState('result');
-    setResult(buildResult(challenge, outcome, playerTimeMs));
+    setResult(buildResult(challenge, outcome, playerTimeMs, locale));
   });
 
   useEffect(() => {
@@ -326,7 +361,7 @@ export default function App({ initialLibrary }) {
   }, [finishRound, runState, sessionElapsedMs]);
 
   if (!challenge) {
-    return <div className="flex min-h-screen items-center justify-center bg-[#040507] text-white">No playable challenge found.</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-[#040507] text-white">{t(locale, 'noPlayableChallenge')}</div>;
   }
 
   async function handleStart() {
@@ -387,7 +422,7 @@ export default function App({ initialLibrary }) {
     setSubmitState('error');
     setFeedback({
       kind: 'miss',
-      message: 'Wrong circuit. Keep listening for the braking rhythm and straight-line signature.'
+      message: t(locale, 'wrongCircuitFeedback')
     });
   }
 
@@ -445,10 +480,12 @@ export default function App({ initialLibrary }) {
           canReplay={Boolean(reviewWaveform)}
           challenge={challenge}
           dimensions={TRACK_DIMENSIONS}
+          locale={locale}
           marker={marker}
           onNextChallenge={handleNextChallenge}
           onReplayAudio={handleReplayReview}
           onRetry={handleRetry}
+          onToggleLocale={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
           result={result}
           telemetryPath={telemetryPath}
         />
@@ -470,6 +507,15 @@ export default function App({ initialLibrary }) {
       />
 
       <div className="flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
+        <div className="flex justify-end">
+          <button
+            className="rounded-full border border-white/20 bg-black/24 px-4 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36"
+            onClick={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
+            type="button"
+          >
+            {getLanguageBadge(locale)}
+          </button>
+        </div>
         <section className="duel-stage__hero pointer-events-none px-1">
           <h1 className="duel-stage__hero-title hero-display">Can You Beat Max?</h1>
         </section>
@@ -493,6 +539,7 @@ export default function App({ initialLibrary }) {
             onTogglePlayback={handleTogglePlayback}
             runState={runState}
             submitState={submitState}
+            locale={locale}
             timer={(
               <TimerRing
                 benchmarkMs={currentBenchmarkMs}

@@ -1,3 +1,5 @@
+import { t } from '../i18n.js';
+
 export default function InteractionDock({
   answerValue,
   canStart,
@@ -11,7 +13,8 @@ export default function InteractionDock({
   onTogglePlayback,
   runState,
   submitState,
-  timer
+  timer,
+  locale
 }) {
   const isSubmitError = submitState === 'error';
 
@@ -28,11 +31,11 @@ export default function InteractionDock({
             onClick={onStart}
             type="button"
           >
-            Start Duel
+            {t(locale, 'startDuel')}
           </button>
           <div className="grid grid-cols-[minmax(0,1fr)_106px] items-end gap-3">
             <p className="rounded-[1rem] border border-white/8 bg-black/12 px-4 py-3 text-[0.78rem] leading-5 text-white/56">
-              Press start, listen to the onboard, then submit the circuit name, city, country, or alias.
+              {t(locale, 'idleHelper')}
             </p>
             <div className="flex justify-end">
               {timer}
@@ -54,7 +57,7 @@ export default function InteractionDock({
                     onAnswerSubmit();
                   }
                 }}
-                placeholder="e.g. COTA"
+                placeholder={t(locale, 'answerPlaceholder')}
                 value={answerValue}
               />
               <button
@@ -66,7 +69,7 @@ export default function InteractionDock({
                 onClick={onAnswerSubmit}
                 type="button"
               >
-                {isSubmitError ? 'Wrong' : 'Submit'}
+                {isSubmitError ? t(locale, 'wrong') : t(locale, 'submit')}
               </button>
             </div>
 
@@ -78,14 +81,14 @@ export default function InteractionDock({
                     onClick={onTogglePlayback}
                     type="button"
                   >
-                    {isPlaying ? 'Pause' : canResume ? 'Resume' : 'Pause'}
+                    {isPlaying ? t(locale, 'pause') : canResume ? t(locale, 'resume') : t(locale, 'pause')}
                   </button>
                   <button
                     className="shrink-0 rounded-full border border-white/14 bg-white/7 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/12"
                     onClick={onReplay}
                     type="button"
                   >
-                    Replay
+                    {t(locale, 'replay')}
                   </button>
                 </div>
 
@@ -94,7 +97,7 @@ export default function InteractionDock({
                   onClick={onSurrender}
                   type="button"
                 >
-                  Surrender
+                  {t(locale, 'surrender')}
                 </button>
               </div>
 
@@ -104,9 +107,11 @@ export default function InteractionDock({
             </div>
           </div>
 
-          <p className="rounded-[1rem] border border-white/8 bg-black/12 px-4 py-3 text-[0.78rem] leading-5 text-white/56">
-            Listen for the shape of the lap, then submit the circuit name, city, country, or alias before giving up.
-          </p>
+          {t(locale, 'liveHelper') ? (
+            <p className="rounded-[1rem] border border-white/8 bg-black/12 px-4 py-3 text-[0.78rem] leading-5 text-white/56">
+              {t(locale, 'liveHelper')}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </section>

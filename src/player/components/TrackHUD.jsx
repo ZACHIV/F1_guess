@@ -1,9 +1,23 @@
+import {
+  getCountryNameByLocale,
+  getTrackNameByLocale
+} from '../track-locales.js';
+
 export default function TrackHUD({
   challenge,
   telemetryPath,
   marker,
-  dimensions
+  dimensions,
+  locale = 'en'
 }) {
+  const trackName = getTrackNameByLocale(challenge.trackName, locale);
+  const countryName = getCountryNameByLocale(challenge.trackCountry, locale);
+  const headerLabel = locale === 'zh' ? '赛道轨迹' : 'debrief trace';
+  const description = locale === 'zh'
+    ? '只有在对决结束后才会揭晓。可以结合音频回放观察弯角几何。'
+    : 'Revealed only after the duel ends. Scrub the clip and read the corner geometry.';
+  const unknownVenue = locale === 'zh' ? '未知赛道' : 'Unknown venue';
+
   return (
     <section
       className="glass-panel relative overflow-hidden rounded-[30px] border border-white/12 p-4"
@@ -14,24 +28,24 @@ export default function TrackHUD({
       <div className="relative">
         <div className="mb-4 flex items-end justify-between gap-3">
           <div>
-            <p className="hud-label">debrief trace</p>
+            <p className="hud-label">{headerLabel}</p>
             <h2 className="mt-2 text-[1.15rem] font-semibold leading-tight text-white">
-              {challenge.trackName}
+              {trackName}
             </h2>
             <p className="mt-2 max-w-[18rem] text-sm leading-6 text-stone-300/85">
-              Revealed only after the duel ends. Scrub the clip and read the corner geometry.
+              {description}
             </p>
           </div>
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-right">
             <p className="text-[11px] uppercase tracking-[0.22em] text-stone-400">
-              {challenge.trackCountry || 'Unknown venue'}
+              {countryName || unknownVenue}
             </p>
           </div>
         </div>
 
         <div className="relative overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(180deg,rgba(6,8,12,0.9),rgba(11,16,24,0.66))] p-4">
           <img
-            alt={`${challenge.trackName} reference`}
+            alt={`${trackName} reference`}
             className="absolute inset-0 h-full w-full object-contain p-4 opacity-[0.08] invert"
             src={challenge.trackSvgSrc}
           />

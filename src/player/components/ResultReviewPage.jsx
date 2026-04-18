@@ -1,4 +1,12 @@
 import { formatScoreTime } from '../game-config.js';
+import {
+  getLanguageBadge,
+  t
+} from '../i18n.js';
+import {
+  getCountryNameByLocale,
+  getTrackNameByLocale
+} from '../track-locales.js';
 import TrackHUD from './TrackHUD.jsx';
 
 export default function ResultReviewPage({
@@ -9,24 +17,41 @@ export default function ResultReviewPage({
   onNextChallenge,
   onReplayAudio,
   onRetry,
+  onToggleLocale,
+  locale,
   result,
   telemetryPath
 }) {
+  const headline = result.localized?.headline ?? result.headline;
+  const copy = result.localized?.copy ?? result.copy;
+  const deltaLabel = result.localized?.deltaLabel ?? result.deltaLabel;
+  const trackName = getTrackNameByLocale(challenge.trackName, locale);
+  const countryName = getCountryNameByLocale(challenge.trackCountry, locale);
+
   return (
     <main
       className="result-review min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_18%),linear-gradient(180deg,#080b10_0%,#05070b_100%)] text-white"
       data-testid="result-review-page"
     >
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-6 sm:px-8 lg:px-10">
+        <div className="flex justify-end">
+          <button
+            className="rounded-full border border-white/20 bg-black/24 px-4 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36"
+            onClick={onToggleLocale}
+            type="button"
+          >
+            {getLanguageBadge(locale)}
+          </button>
+        </div>
         <header className="result-review__hero rounded-[2rem] border border-white/10 bg-white/[0.04] px-6 py-6 backdrop-blur-xl">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-white/52">Headset Duel Result</p>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-white/52">{t(locale, 'resultEyebrow')}</p>
           <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <h1 className="text-[2.4rem] font-semibold leading-[0.92] tracking-[-0.08em] text-white sm:text-[3.2rem]">
-                {result.headline}
+                {headline}
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-white/72">
-                {result.copy}
+                {copy}
               </p>
             </div>
 
@@ -36,14 +61,14 @@ export default function ResultReviewPage({
                 onClick={onNextChallenge}
                 type="button"
               >
-                Next Duel
+                {t(locale, 'nextDuel')}
               </button>
               <button
                 className="rounded-full border border-white/16 bg-white/6 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10"
                 onClick={onRetry}
                 type="button"
               >
-                Retry
+                {t(locale, 'retry')}
               </button>
               <button
                 className="rounded-full border border-white/16 bg-white/6 px-5 py-3 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
@@ -51,7 +76,7 @@ export default function ResultReviewPage({
                 onClick={onReplayAudio}
                 type="button"
               >
-                Replay Audio
+                {t(locale, 'replayAudio')}
               </button>
             </div>
           </div>
@@ -61,26 +86,27 @@ export default function ResultReviewPage({
           <TrackHUD
             challenge={challenge}
             dimensions={dimensions}
+            locale={locale}
             marker={marker}
             telemetryPath={telemetryPath}
           />
 
           <aside className="grid gap-4">
             <section className="result-review__panel rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-white/48">Debrief</p>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-white/48">{t(locale, 'debrief')}</p>
               <div className="mt-4 grid gap-3">
-                <StatCard label="Player" value={formatScoreTime(result.playerTimeMs)} />
-                <StatCard label="Max" value={formatScoreTime(result.benchmarkMs)} />
-                <StatCard label="Gap" value={result.deltaLabel} />
+                <StatCard label={t(locale, 'player')} value={formatScoreTime(result.playerTimeMs)} />
+                <StatCard label={t(locale, 'max')} value={formatScoreTime(result.benchmarkMs)} />
+                <StatCard label={t(locale, 'gap')} value={deltaLabel} />
               </div>
             </section>
 
             <section className="result-review__panel rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-              <p className="text-[10px] uppercase tracking-[0.24em] text-white/48">Track Reveal</p>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-white/48">{t(locale, 'trackReveal')}</p>
               <div className="mt-4 grid gap-3">
-                <RevealRow label="Circuit" value={challenge.trackName} />
-                <RevealRow label="Country" value={challenge.trackCountry} />
-                <RevealRow label="Driver" value={`${challenge.driverName} #${challenge.driverNumber || '00'}`} />
+                <RevealRow label={t(locale, 'circuit')} value={trackName} />
+                <RevealRow label={t(locale, 'country')} value={countryName} />
+                <RevealRow label={t(locale, 'driver')} value={`${challenge.driverName} #${challenge.driverNumber || '00'}`} />
               </div>
             </section>
           </aside>

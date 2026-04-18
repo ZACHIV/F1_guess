@@ -19,12 +19,14 @@ describe('getAcceptedAnswers', () => {
   };
 
   it('collects track, country, and aliases into one normalized answer set', () => {
-    expect(getAcceptedAnswers(challenge)).toEqual([
+    expect(getAcceptedAnswers(challenge)).toEqual(expect.arrayContaining([
       'circuit of the americas',
       'united states',
+      '美洲赛道',
+      '美国',
       'cota',
       'austin'
-    ]);
+    ]));
   });
 });
 
@@ -32,7 +34,8 @@ describe('isChallengeAnswerCorrect', () => {
   const challenge = {
     trackName: 'Circuit Gilles Villeneuve',
     trackCountry: 'Canada',
-    answerAliases: ['Montreal', 'Gilles Villeneuve']
+    answerAliases: ['Montreal', 'Gilles Villeneuve'],
+    zhAliases: ['维伦纽夫赛道', '蒙特利尔']
   };
 
   it('accepts the full circuit name in formal mode', () => {
@@ -45,6 +48,14 @@ describe('isChallengeAnswerCorrect', () => {
 
   it('accepts aliases and abbreviations in formal mode', () => {
     expect(isChallengeAnswerCorrect(challenge, 'Montreal')).toBe(true);
+  });
+
+  it('accepts chinese input aliases', () => {
+    expect(isChallengeAnswerCorrect(challenge, '加拿大')).toBe(true);
+  });
+
+  it('accepts colloquial chinese track aliases', () => {
+    expect(isChallengeAnswerCorrect(challenge, '维伦纽夫')).toBe(true);
   });
 
   it('rejects unrelated answers', () => {
