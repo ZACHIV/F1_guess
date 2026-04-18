@@ -27,6 +27,9 @@ export default function ResultReviewPage({
   const deltaLabel = result.localized?.deltaLabel ?? result.deltaLabel;
   const trackName = getTrackNameByLocale(challenge.trackName, locale);
   const countryName = getCountryNameByLocale(challenge.trackCountry, locale);
+  const benchmarkSourceLabel = challenge.benchmarkSource === 'recorded'
+    ? t(locale, 'benchmarkSourceRecorded')
+    : t(locale, 'benchmarkSourceEstimated');
 
   return (
     <main
@@ -96,7 +99,11 @@ export default function ResultReviewPage({
               <p className="text-[10px] uppercase tracking-[0.24em] text-white/48">{t(locale, 'debrief')}</p>
               <div className="mt-4 grid gap-3">
                 <StatCard label={t(locale, 'player')} value={formatScoreTime(result.playerTimeMs)} />
-                <StatCard label={t(locale, 'max')} value={formatScoreTime(result.benchmarkMs)} />
+                <StatCard
+                  label={t(locale, 'max')}
+                  value={formatScoreTime(result.benchmarkMs)}
+                  hint={benchmarkSourceLabel}
+                />
                 <StatCard label={t(locale, 'gap')} value={deltaLabel} />
               </div>
             </section>
@@ -116,11 +123,14 @@ export default function ResultReviewPage({
   );
 }
 
-function StatCard({ label, value }) {
+function StatCard({ hint, label, value }) {
   return (
     <div className="rounded-[1.3rem] border border-white/10 bg-black/18 px-4 py-4">
       <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">{label}</p>
       <p className="mt-3 text-[1.65rem] font-semibold tracking-[-0.06em] text-white">{value}</p>
+      {hint ? (
+        <p className="mt-2 text-[0.72rem] font-medium tracking-[0.04em] text-white/34">{hint}</p>
+      ) : null}
     </div>
   );
 }

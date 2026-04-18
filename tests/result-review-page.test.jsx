@@ -11,13 +11,16 @@ describe('ResultReviewPage', () => {
           trackCountry: 'Italy',
           driverName: 'Max Verstappen',
           driverNumber: '1',
-          trackSvgSrc: '/assets/tracks/italy.svg'
+          trackSvgSrc: '/assets/tracks/italy.svg',
+          benchmarkSource: 'recorded'
         }}
         dimensions={{ width: 360, height: 250 }}
         marker={{ x: 150, y: 120 }}
+        locale="en"
         onNextChallenge={() => {}}
         onReplayAudio={() => {}}
         onRetry={() => {}}
+        onToggleLocale={() => {}}
         result={{
           outcome: 'lose',
           headline: 'Max still called Monza first.',
@@ -36,6 +39,7 @@ describe('ResultReviewPage', () => {
     expect(markup).toContain('Retry');
     expect(markup).toContain('Replay Audio');
     expect(markup).toContain('Monza');
+    expect(markup).toContain('Recorded benchmark');
     expect(markup).toContain('/assets/tracks/italy.svg');
   });
 });

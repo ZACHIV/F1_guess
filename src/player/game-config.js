@@ -1,4 +1,5 @@
 export const MAX_GUESS_MS = 60_000;
+export const ESTIMATED_BENCHMARK_RATIO = 0.226;
 
 export const DUEL_POOL = [
   { id: 'italy-quali-max-verstappen-2025', benchmarkMs: 22_120, label: 'Monza' },
@@ -26,19 +27,37 @@ export function formatClockTime(ms) {
 }
 
 export function getDuelChallenge(challenge) {
+  if (!challenge) {
+    return null;
+  }
+
   const duelEntry = DUEL_LOOKUP.get(challenge?.id);
-  if (!duelEntry) {
+  const benchmarkMs = duelEntry?.benchmarkMs ?? getEstimatedBenchmarkMs(challenge);
+  const benchmarkTrackLabel = duelEntry?.label ?? challenge.trackName;
+
+  if (!Number.isFinite(benchmarkMs) || benchmarkMs <= 0) {
     return null;
   }
 
   return {
     ...challenge,
-    benchmarkMs: duelEntry.benchmarkMs,
-    benchmarkLabel: formatScoreTime(duelEntry.benchmarkMs),
-    benchmarkTrackLabel: duelEntry.label
+    benchmarkMs,
+    benchmarkLabel: formatScoreTime(benchmarkMs),
+    benchmarkSource: duelEntry ? 'recorded' : 'estimated',
+    benchmarkTrackLabel
   };
 }
 
 export function getDuelChallengeIds() {
   return DUEL_POOL.map((entry) => entry.id);
+}
+
+function getEstimatedBenchmarkMs(challenge) {
+  const clipDurationMs = Number(challenge?.clipDurationMs ?? 0);
+  if (!Number.isFinite(clipDurationMs) || clipDurationMs <= 0) {
+    return null;
+  }
+
+  // Use the median benchmark-to-clip ratio from the seven calibrated rounds.
+  return Math.round(clipDurationMs * ESTIMATED_BENCHMARK_RATIO);
 }
