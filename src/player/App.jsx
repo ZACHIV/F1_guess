@@ -144,6 +144,7 @@ export default function App({ initialLibrary }) {
   const [error, setError] = useState('');
   const [runState, setRunState] = useState('idle');
   const [result, setResult] = useState(null);
+  const [submitState, setSubmitState] = useState('idle');
   useEffect(() => {
     if (initialLibrary) {
       return undefined;
@@ -185,6 +186,7 @@ export default function App({ initialLibrary }) {
     setFeedback(null);
     setResult(null);
     setRunState('idle');
+    setSubmitState('idle');
     setAnswerValue('');
     setCurrentTime(0);
     setTelemetryModel(null);
@@ -238,6 +240,20 @@ export default function App({ initialLibrary }) {
 
     return playResultAudioCue(result);
   }, [result]);
+
+  useEffect(() => {
+    if (submitState !== 'error') {
+      return undefined;
+    }
+
+    const resetTimer = window.setTimeout(() => {
+      setSubmitState('idle');
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(resetTimer);
+    };
+  }, [submitState]);
 
   const currentBenchmarkMs = challenge?.benchmarkMs ?? 0;
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
@@ -296,6 +312,7 @@ export default function App({ initialLibrary }) {
     setIsPlaying(false);
     setCanResume(false);
     setFeedback(null);
+    setSubmitState('idle');
     setRunState('result');
     setResult(buildResult(challenge, outcome, playerTimeMs));
   });
@@ -316,6 +333,7 @@ export default function App({ initialLibrary }) {
     setError('');
     setFeedback(null);
     setResult(null);
+    setSubmitState('idle');
     setAnswerValue('');
     setRunState('live');
     const didStart = await playFromStart();
@@ -342,25 +360,31 @@ export default function App({ initialLibrary }) {
     await playFromStart();
   }
 
+  async function handleReplayLive() {
+    if (runState !== 'live') {
+      return;
+    }
+
+    await playFromStart();
+  }
+
   function handleAnswerSubmit() {
     if (runState !== 'live') {
       return;
     }
 
     if (!answerValue.trim()) {
-      setFeedback({
-        kind: 'invalid',
-        message: 'Say the circuit out loud if needed, then type the name before you lock it.'
-      });
       return;
     }
 
     if (isChallengeAnswerCorrect(challenge, answerValue)) {
       const playerTimeMs = Math.min(currentTime, MAX_GUESS_MS);
+      setSubmitState('idle');
       finishRound(playerTimeMs < currentBenchmarkMs ? 'win' : 'lose', playerTimeMs);
       return;
     }
 
+    setSubmitState('error');
     setFeedback({
       kind: 'miss',
       message: 'Wrong circuit. Keep listening for the braking rhythm and straight-line signature.'
@@ -382,6 +406,7 @@ export default function App({ initialLibrary }) {
     setError('');
     setFeedback(null);
     setResult(null);
+    setSubmitState('idle');
     setAnswerValue('');
     setRunState('live');
     const didStart = await playFromStart();
@@ -433,8 +458,8 @@ export default function App({ initialLibrary }) {
 
   return (
     <PosterStage challenge={challenge} result={result} runState={runState}>
-        <WaveformHUD
-          audioSrc={challenge.audioSrc}
+      <WaveformHUD
+        audioSrc={challenge.audioSrc}
         onFinish={() => {
           setIsPlaying(false);
           setCanResume(false);
@@ -444,29 +469,39 @@ export default function App({ initialLibrary }) {
         onTimeUpdate={setCurrentTime}
       />
 
-      <div className="mt-auto px-6 pb-10 sm:px-8 sm:pb-12">
-        <div className="ml-auto grid w-full max-w-[22rem] grid-cols-[minmax(0,1fr)_118px] items-end gap-3">
-          <div className="min-w-0">
-            <InteractionDock
-              answerValue={answerValue}
-              canStart={Boolean(liveWaveform)}
-              canResume={canResume}
-              feedback={feedback}
-              isPlaying={isPlaying}
-              onAnswerChange={setAnswerValue}
-              onAnswerSubmit={handleAnswerSubmit}
-              onStart={handleStart}
-              onSurrender={handleSurrender}
-              onTogglePlayback={handleTogglePlayback}
-              runState={runState}
-            />
-          </div>
-          <TimerRing
-            benchmarkMs={currentBenchmarkMs}
-            currentTime={displayElapsedMs}
-            durationMs={MAX_GUESS_MS}
-            result={result}
+      <div className="flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
+        <section className="duel-stage__hero pointer-events-none px-1">
+          <h1 className="duel-stage__hero-title hero-display">Can You Beat Max?</h1>
+        </section>
+
+        <div className="duel-stage__control-cluster">
+          <InteractionDock
+            answerValue={answerValue}
+            canStart={Boolean(liveWaveform)}
+            canResume={canResume}
+            isPlaying={isPlaying}
+            onAnswerChange={(value) => {
+              setAnswerValue(value);
+              if (submitState === 'error') {
+                setSubmitState('idle');
+              }
+            }}
+            onReplay={handleReplayLive}
+            onAnswerSubmit={handleAnswerSubmit}
+            onStart={handleStart}
+            onSurrender={handleSurrender}
+            onTogglePlayback={handleTogglePlayback}
             runState={runState}
+            submitState={submitState}
+            timer={(
+              <TimerRing
+                benchmarkMs={currentBenchmarkMs}
+                currentTime={displayElapsedMs}
+                durationMs={MAX_GUESS_MS}
+                result={result}
+                runState={runState}
+              />
+            )}
           />
         </div>
       </div>

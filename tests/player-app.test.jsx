@@ -30,6 +30,7 @@ describe('App', () => {
     expect(markup).toContain('data-testid="timer-ring"');
     expect(markup).toContain('data-testid="interaction-dock"');
     expect(markup).toContain('/assets/max_with_earphone.jpeg');
+    expect(markup).toContain('Can You Beat Max?');
     expect(markup).toContain('Start Duel');
     expect(markup).not.toContain('Can you beat Max by ear?');
     expect(markup).not.toContain('Hidden Pool');

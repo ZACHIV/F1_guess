@@ -91,9 +91,9 @@ select {
 
 .duel-stage__photo-overlay {
   background:
-    linear-gradient(180deg, rgba(12, 16, 22, 0.16) 0%, rgba(12, 16, 22, 0.08) 20%, rgba(12, 16, 22, 0.12) 58%, rgba(12, 16, 22, 0.34) 100%),
+    linear-gradient(180deg, rgba(12, 16, 22, 0.14) 0%, rgba(12, 16, 22, 0.08) 18%, rgba(12, 16, 22, 0.2) 56%, rgba(12, 16, 22, 0.46) 100%),
     radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 0.1), transparent 18%),
-    radial-gradient(circle at 88% 74%, rgba(236, 88, 34, 0.18), transparent 24%);
+    radial-gradient(circle at 88% 74%, rgba(236, 88, 34, 0.22), transparent 24%);
 }
 
 .duel-stage__top-glow {
@@ -101,7 +101,29 @@ select {
 }
 
 .duel-stage__bottom-glow {
-  background: linear-gradient(180deg, transparent, rgba(14, 16, 20, 0.26) 24%, rgba(14, 16, 20, 0.58) 100%);
+  background: linear-gradient(180deg, transparent, rgba(14, 16, 20, 0.36) 24%, rgba(10, 13, 19, 0.82) 100%);
+}
+
+.duel-stage__hero {
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  padding-top: 0.5rem;
+  text-align: center;
+}
+
+.duel-stage__hero-title {
+  margin: 0;
+  font-size: clamp(2.7rem, 9vw, 4.4rem);
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+  color: rgba(249, 250, 252, 0.97);
+  text-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+}
+
+.duel-stage__control-cluster {
+  width: 100%;
+  margin-top: auto;
 }
 
 .poster-noise {
@@ -163,14 +185,14 @@ select {
 
 .poster-timer__ring {
   position: relative;
-  width: 118px;
-  height: 118px;
+  width: 106px;
+  height: 106px;
   border-radius: 999px;
-  background: rgba(11, 15, 20, 0.24);
+  background: rgba(11, 15, 20, 0.44);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 14px 30px rgba(0, 0, 0, 0.18);
+    0 18px 34px rgba(0, 0, 0, 0.22);
 }
 
 .poster-timer__ring::before {
@@ -203,16 +225,27 @@ select {
   border-radius: 999px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)),
-    rgba(7, 10, 14, 0.2);
+    rgba(7, 10, 14, 0.36);
   backdrop-filter: blur(18px);
 }
 
 .poster-timer__inner strong {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: #ffffff;
+}
+
+@media (max-width: 520px) {
+  .duel-stage__hero {
+    padding-top: 0.2rem;
+  }
+
+  .poster-timer__ring {
+    width: 104px;
+    height: 104px;
+  }
 }
 
 .result-review__hero,
