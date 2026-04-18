@@ -290,71 +290,8 @@ select {
     0 24px 60px rgba(0, 0, 0, 0.22);
 }
 
-.track-hud__shadow {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.08);
-}
-
-.track-hud__shell {
-  fill: none;
-  stroke: rgba(95, 118, 146, 0.38);
-}
-
-.track-hud__base {
-  fill: none;
-  stroke: rgba(246, 249, 252, 0.88);
-  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.18));
-}
-
-.track-hud__trail {
-  fill: none;
-  stroke: rgba(255, 122, 66, 0.24);
-  filter: drop-shadow(0 0 12px rgba(255, 122, 66, 0.16));
-}
-
-.track-hud__progress {
-  fill: none;
-  stroke: #ff7a42;
-  filter: drop-shadow(0 0 12px rgba(255, 122, 66, 0.42));
-}
-
-.track-hud__start {
-  fill: rgba(255, 255, 255, 0.74);
-}
-
-.track-hud__marker-pulse {
-  fill: rgba(255, 122, 66, 0.18);
-  animation: trackHudPulse 1.6s ease-out infinite;
-  transform-origin: center;
-}
-
-.track-hud__marker-halo {
-  fill: rgba(255, 122, 66, 0.3);
-  stroke: rgba(255, 241, 232, 0.78);
-  stroke-width: 1.5;
-}
-
-.track-hud__marker-core {
-  fill: #ff6d2f;
-  stroke: #fff2e8;
-  stroke-width: 1.6;
-}
-
-@keyframes trackHudPulse {
-  0% {
-    opacity: 0.88;
-    transform: scale(0.82);
-  }
-
-  70% {
-    opacity: 0.14;
-    transform: scale(1.12);
-  }
-
-  100% {
-    opacity: 0;
-    transform: scale(1.18);
-  }
+.track-hud__viewport svg {
+  display: block;
 }
 
 .team-radio-barrage {

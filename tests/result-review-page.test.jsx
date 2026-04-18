@@ -6,6 +6,7 @@ describe('ResultReviewPage', () => {
   it('renders a separate review screen with track svg debrief and replay controls', () => {
     const markup = renderToStaticMarkup(
       <ResultReviewPage
+        canMuteAnthem
         challenge={{
           trackName: 'Monza',
           trackCountry: 'Italy',
@@ -18,6 +19,7 @@ describe('ResultReviewPage', () => {
         marker={{ x: 150, y: 120 }}
         locale="en"
         onNextChallenge={() => {}}
+        onMuteAnthem={() => {}}
         onReplayAudio={() => {}}
         onRetry={() => {}}
         onToggleLocale={() => {}}
@@ -35,11 +37,12 @@ describe('ResultReviewPage', () => {
 
     expect(markup).toContain('data-testid="result-review-page"');
     expect(markup).toContain('data-testid="track-hud"');
+    expect(markup).toContain('data-testid="track-hud-viewport"');
     expect(markup).toContain('Next Duel');
     expect(markup).toContain('Retry');
-    expect(markup).toContain('Replay Audio');
+    expect(markup).toContain('Visualize Track');
+    expect(markup).toContain('Mute Anthem');
     expect(markup).toContain('Monza');
     expect(markup).toContain('Recorded benchmark');
-    expect(markup).toContain('/assets/tracks/italy.svg');
   });
 });

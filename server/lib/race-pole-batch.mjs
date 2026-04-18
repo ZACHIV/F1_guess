@@ -234,7 +234,7 @@ export function buildRacePoleChallengeRecord({
     sessionKey: row.session_key,
     lapNumber: resolved.lapNumber,
     telemetrySource: `OpenF1 official location + car_data (fastest qualifying lap, session ${row.session_key})`,
-    trackVectorSource: 'F1DB local track SVG',
+    trackVectorSource: 'F1DB white-outline track SVG',
     trackSvgSrc: importedTrack.trackSvgSrc,
     telemetryLocationSrc: importedTelemetry.telemetryLocationSrc,
     telemetryCarDataSrc: importedTelemetry.telemetryCarDataSrc,

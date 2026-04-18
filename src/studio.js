@@ -339,7 +339,7 @@ function renderTrackPreview() {
         </div>
         <div class="track-preview-card__meta">
           <strong>${escapeHtml(state.draft.trackName || state.form.trackQuery || '本地赛道图')}</strong>
-          <span>${escapeHtml(state.draft.trackVectorSource || 'F1DB 本地赛道 SVG')}</span>
+          <span>${escapeHtml(state.draft.trackVectorSource || 'F1DB white-outline 赛道 SVG')}</span>
           <code>${escapeHtml(state.draft.trackSvgSrc)}</code>
         </div>
       </div>
@@ -947,7 +947,7 @@ function bindEvents() {
         })
       });
       state.draft.trackSvgSrc = payload.trackSvgSrc;
-      state.draft.trackVectorSource = `F1DB 本地赛道 SVG · ${payload.circuitName} · ${payload.layoutId}`;
+      state.draft.trackVectorSource = `F1DB white-outline 赛道 SVG · ${payload.circuitName} · ${payload.layoutId}`;
       setStatus(`已匹配并导入赛道图：${payload.circuitName} (${payload.layoutId})。下方预览已更新。`, 'success');
       pushActivity(`赛道图已匹配：${payload.circuitName} (${payload.storage === 'remote' ? '远程已同步' : payload.layoutId})`, 'success');
     });

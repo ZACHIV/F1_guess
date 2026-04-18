@@ -49,6 +49,7 @@ describe('readF1dbCircuitIndex', () => {
 
     expect(circuits.length).toBeGreaterThan(50);
     expect(redBullRing?.layouts.at(-1)?.id).toBe('spielberg-3');
+    expect(redBullRing?.layouts.at(-1)?.assetRelativePath).toBe('src/assets/circuits/white-outline/spielberg-3.svg');
   });
 });
 

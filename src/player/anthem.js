@@ -29,6 +29,9 @@ function createNoopCleanup() {
   return () => {};
 }
 
+const activeLayerAudios = new Map();
+const mutedLayerIds = new Set();
+
 function playAudioAsset(src, options = {}) {
   if (typeof window === 'undefined') {
     return createNoopCleanup();
@@ -40,8 +43,14 @@ function playAudioAsset(src, options = {}) {
 
   const audio = new Audio(src);
   audio.preload = 'auto';
-  audio.volume = Math.max(0, Math.min(1, options.volume ?? 1));
+  const layerId = options.id ?? '';
+  const baseVolume = Math.max(0, Math.min(1, options.volume ?? 1));
+  audio.volume = mutedLayerIds.has(layerId) ? 0 : baseVolume;
+  audio.__baseVolume = baseVolume;
   audio.loop = Boolean(options.loop);
+  if (layerId) {
+    activeLayerAudios.set(layerId, audio);
+  }
   if (typeof options.onEnded === 'function') {
     audio.onended = () => {
       options.onEnded();
@@ -54,6 +63,9 @@ function playAudioAsset(src, options = {}) {
 
   return () => {
     audio.onended = null;
+    if (layerId && activeLayerAudios.get(layerId) === audio) {
+      activeLayerAudios.delete(layerId);
+    }
     audio.pause();
     audio.currentTime = 0;
   };
@@ -76,6 +88,27 @@ export const AUXILIARY_AUDIO_ASSETS = {
   dutchAnthem: { id: 'dutch-anthem', src: DUTCH_ANTHEM_SRC, volume: 0.8 },
   maxChant: { id: 'max-chant', src: SIMPLY_LOVELY_SRC, volume: 0.88 }
 };
+
+function muteLayerPlayback(layerId) {
+  mutedLayerIds.add(layerId);
+  const activeAudio = activeLayerAudios.get(layerId);
+  if (activeAudio) {
+    activeAudio.volume = 0;
+  }
+}
+
+export function muteDutchAnthemPlayback() {
+  muteLayerPlayback(AUXILIARY_AUDIO_ASSETS.dutchAnthem.id);
+}
+
+export function resetResultAudioState() {
+  mutedLayerIds.clear();
+  activeLayerAudios.forEach((audio) => {
+    if (typeof audio.__baseVolume === 'number') {
+      audio.volume = audio.__baseVolume;
+    }
+  });
+}
 
 export function playDutchAnthemSting() {
   if (AUXILIARY_AUDIO_ASSETS.dutchAnthem.src) {

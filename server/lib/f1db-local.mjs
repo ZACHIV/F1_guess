@@ -138,10 +138,10 @@ export async function readF1dbCircuitIndex(root) {
 
   const f1dbRoot = resolveF1dbRoot(root);
   const circuitsDir = resolve(f1dbRoot, 'src/data/circuits');
-  const assetsDir = resolve(f1dbRoot, 'src/assets/circuits/white');
+  const assetsDir = resolve(f1dbRoot, 'src/assets/circuits/white-outline');
 
   if (!existsSync(circuitsDir) || !existsSync(assetsDir)) {
-    throw new Error('F1DB local repository is missing. Expected submodule/f1db with src/data/circuits and src/assets/circuits/white.');
+    throw new Error('F1DB local repository is missing. Expected submodule/f1db with src/data/circuits and src/assets/circuits/white-outline.');
   }
 
   const files = (await readdir(circuitsDir))
@@ -156,7 +156,7 @@ export async function readF1dbCircuitIndex(root) {
 
     circuit.layouts = circuit.layouts
       .map((layout) => {
-        const assetRelativePath = `src/assets/circuits/white/${layout.id}.svg`;
+        const assetRelativePath = `src/assets/circuits/white-outline/${layout.id}.svg`;
         const assetAbsolutePath = resolve(f1dbRoot, assetRelativePath);
 
         if (!existsSync(assetAbsolutePath)) {

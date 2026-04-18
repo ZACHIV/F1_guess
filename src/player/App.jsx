@@ -1,17 +1,14 @@
-import { startTransition, useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import fallbackChallenges from '../data/challenge-library.json';
 import { loadChallengeTelemetry } from '../lib/challenge-assets.js';
 import { normalizeChallenge } from '../lib/challenge-utils.js';
 import {
   buildTelemetryPath,
-  buildTelemetryProgressPath,
-  buildTelemetryTrailPath,
   getInterpolatedTelemetryPoint,
   getNearestTelemetrySample,
   normalizeTelemetryPoints,
   toElapsedSamples
 } from '../lib/telemetry-utils.js';
-import { playResultAudioCue } from './anthem.js';
 import { isChallengeAnswerCorrect } from './answer-utils.js';
 import {
   MAX_GUESS_MS,
@@ -30,6 +27,11 @@ import {
   t
 } from './i18n.js';
 import { getSynchronizedElapsedMs } from './sync-utils.js';
+import {
+  muteDutchAnthemPlayback,
+  playResultAudioCue,
+  resetResultAudioState
+} from './anthem.js';
 
 const TRACK_DIMENSIONS = { width: 360, height: 250, padding: 26 };
 const EMPTY_HUD = { speed: '-', n_gear: '-', throttle: '-', rpm: '-' };
@@ -151,6 +153,7 @@ function buildResult(challenge, outcome, playerTimeMs, locale) {
 }
 
 export default function App({ initialLibrary }) {
+  const resultAudioCleanupRef = useRef(() => {});
   const [locale, setLocale] = useState(detectInitialLocale);
   const [library, setLibrary] = useState(() => getPlayableChallenges(initialLibrary ?? fallbackChallenges));
   const [selectedChallengeId, setSelectedChallengeId] = useState(() =>
@@ -170,6 +173,15 @@ export default function App({ initialLibrary }) {
   const [runState, setRunState] = useState('idle');
   const [result, setResult] = useState(null);
   const [submitState, setSubmitState] = useState('idle');
+  const [canMuteAnthem, setCanMuteAnthem] = useState(false);
+  const [anthemMuted, setAnthemMuted] = useState(false);
+
+  const muteAnthemCue = useEffectEvent(() => {
+    muteDutchAnthemPlayback();
+    setAnthemMuted(true);
+    setCanMuteAnthem(false);
+  });
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('f1_guess_locale', locale);
@@ -218,6 +230,11 @@ export default function App({ initialLibrary }) {
     setResult(null);
     setRunState('idle');
     setSubmitState('idle');
+    resultAudioCleanupRef.current?.();
+    resultAudioCleanupRef.current = () => {};
+    resetResultAudioState();
+    setCanMuteAnthem(false);
+    setAnthemMuted(false);
     setAnswerValue('');
     setCurrentTime(0);
     setTelemetryModel(null);
@@ -273,11 +290,29 @@ export default function App({ initialLibrary }) {
   }, [challenge, locale, result]);
 
   useEffect(() => {
+    resultAudioCleanupRef.current?.();
+    resultAudioCleanupRef.current = () => {};
+    resetResultAudioState();
+    setAnthemMuted(false);
+
     if (!result || result.outcome === 'win') {
+      setCanMuteAnthem(false);
       return undefined;
     }
 
-    return playResultAudioCue(result);
+    const cleanup = playResultAudioCue(result);
+    resultAudioCleanupRef.current = cleanup;
+    setCanMuteAnthem(true);
+
+    return () => {
+      cleanup?.();
+      if (resultAudioCleanupRef.current === cleanup) {
+        resultAudioCleanupRef.current = () => {};
+      }
+      resetResultAudioState();
+      setCanMuteAnthem(false);
+      setAnthemMuted(false);
+    };
   }, [challenge?.id, result?.outcome, result?.playerTimeMs]);
 
   useEffect(() => {
@@ -297,14 +332,7 @@ export default function App({ initialLibrary }) {
   const currentBenchmarkMs = challenge?.benchmarkMs ?? 0;
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
   const displayElapsedMs = result?.playerTimeMs ?? sessionElapsedMs;
-  const telemetryElapsedMs = challenge ? getSynchronizedElapsedMs(currentTime, challenge) : 0;
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
-  const telemetryProgressPath = telemetryModel
-    ? buildTelemetryProgressPath(telemetryModel.locationFrames, telemetryElapsedMs)
-    : '';
-  const telemetryTrailPath = telemetryModel
-    ? buildTelemetryTrailPath(telemetryModel.locationFrames, telemetryElapsedMs, 1800)
-    : '';
   const activeWaveform = result ? reviewWaveform : liveWaveform;
 
   const playFromStart = useEffectEvent(async () => {
@@ -487,18 +515,18 @@ export default function App({ initialLibrary }) {
         />
         <ResultReviewPage
           canReplay={Boolean(reviewWaveform)}
+          canMuteAnthem={canMuteAnthem && !anthemMuted}
           challenge={challenge}
           dimensions={TRACK_DIMENSIONS}
           locale={locale}
           marker={marker}
           onNextChallenge={handleNextChallenge}
+          onMuteAnthem={muteAnthemCue}
           onReplayAudio={handleReplayReview}
           onRetry={handleRetry}
           onToggleLocale={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
           result={result}
-          telemetryProgressPath={telemetryProgressPath}
           telemetryPath={telemetryPath}
-          telemetryTrailPath={telemetryTrailPath}
         />
       </>
     );
