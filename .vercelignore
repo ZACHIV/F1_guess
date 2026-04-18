@@ -1,0 +1,10 @@
+.claude
+.omx
+.tmp
+.DS_Store
+data-cache
+dist
+node_modules
+output
+submodule
+vendor

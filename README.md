@@ -4,9 +4,9 @@ Mobile-first single-screen prototype for guessing an F1 circuit from onboard eng
 
 ## Stack
 - Vite
-- Vanilla JavaScript
+- React
 - WaveSurfer.js
-- Node CLI for audio extraction
+- Express API for local studio tooling and read-only production routes
 
 ## Run the app
 ```bash
@@ -19,8 +19,10 @@ npm run dev
 This repo can be deployed on Vercel for the public game frontend.
 
 Included config:
-- [vercel.json](/home/zhangzheng/0_platform/personal/F1_guess/vercel.json)
-- [api/index.mjs](/home/zhangzheng/0_platform/personal/F1_guess/api/index.mjs)
+- [vercel.json](/Users/zz/workspace/claude_made/F1_guess/vercel.json)
+- [api/index.mjs](/Users/zz/workspace/claude_made/F1_guess/api/index.mjs)
+- [.env.vercel.example](/Users/zz/workspace/claude_made/F1_guess/.env.vercel.example)
+- [docs/vercel-deploy.md](/Users/zz/workspace/claude_made/F1_guess/docs/vercel-deploy.md)
 
 What works on Vercel:
 - The Vite frontend
@@ -41,6 +43,11 @@ Deploy steps:
 4. Build command: `npm run build`.
 5. Output directory: `dist`.
 6. Add the asset storage env vars if your challenge records use remote URLs.
+7. Visit `/api/health` after deploy and confirm the runtime reports `vercel`.
+
+Fast follow:
+- Use `.env.vercel.example` as the source of truth for production env vars.
+- Use [docs/vercel-deploy.md](/Users/zz/workspace/claude_made/F1_guess/docs/vercel-deploy.md) as the deploy checklist.
 
 Recommended Vercel env vars:
 ```bash
@@ -133,7 +140,7 @@ node scripts/setup-f1db.mjs --refresh
 
 ## Test
 ```bash
-npm run test -- --run
+npm test
 ```
 
 ## Notes
