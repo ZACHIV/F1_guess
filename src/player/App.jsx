@@ -12,17 +12,15 @@ import {
 import { playResultAudioCue } from './anthem.js';
 import { isChallengeAnswerCorrect } from './answer-utils.js';
 import {
-  DUEL_POOL,
   MAX_GUESS_MS,
   formatScoreTime,
   getDuelChallenge
 } from './game-config.js';
 import PosterStage from './components/PosterStage.jsx';
+import ResultReviewPage from './components/ResultReviewPage.jsx';
 import WaveformHUD from './components/WaveformHUD.jsx';
-import TrackHUD from './components/TrackHUD.jsx';
 import TimerRing from './components/TimerRing.jsx';
-import AnswerDock from './components/AnswerDock.jsx';
-import TelemetryStrip from './components/TelemetryStrip.jsx';
+import InteractionDock from './components/InteractionDock.jsx';
 import { getSynchronizedElapsedMs } from './sync-utils.js';
 
 const TRACK_DIMENSIONS = { width: 360, height: 250, padding: 26 };
@@ -107,6 +105,17 @@ function buildResult(challenge, outcome, playerTimeMs) {
     };
   }
 
+  if (outcome === 'forfeit') {
+    return {
+      outcome,
+      playerTimeMs,
+      benchmarkMs,
+      headline: `You waved off before ${challenge.trackName}.`,
+      copy: `Correct answer: ${answerLabel}. You bailed out of the duel early, so Verstappen keeps the line.`,
+      deltaLabel: `${formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0))} behind`
+    };
+  }
+
   return {
     outcome,
     playerTimeMs,
@@ -126,15 +135,15 @@ export default function App({ initialLibrary }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [hudState, setHudState] = useState(EMPTY_HUD);
   const [marker, setMarker] = useState({ x: 180, y: 125 });
-  const [waveform, setWaveform] = useState(null);
+  const [liveWaveform, setLiveWaveform] = useState(null);
+  const [reviewWaveform, setReviewWaveform] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [canResume, setCanResume] = useState(false);
   const [answerValue, setAnswerValue] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [error, setError] = useState('');
   const [runState, setRunState] = useState('idle');
   const [result, setResult] = useState(null);
-  const [showBenchmarks, setShowBenchmarks] = useState(false);
-
   useEffect(() => {
     if (initialLibrary) {
       return undefined;
@@ -182,6 +191,7 @@ export default function App({ initialLibrary }) {
     setMarker({ x: 180, y: 125 });
     setHudState(EMPTY_HUD);
     setIsPlaying(false);
+    setCanResume(false);
 
     let cancelled = false;
 
@@ -235,28 +245,45 @@ export default function App({ initialLibrary }) {
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
   const benchmarkLabel = formatScoreTime(currentBenchmarkMs);
   const maxTimeLabel = formatScoreTime(MAX_GUESS_MS);
+  const activeWaveform = result ? reviewWaveform : liveWaveform;
 
   const playFromStart = useEffectEvent(async () => {
-    if (!waveform) {
+    if (!activeWaveform) {
       setError('Audio is still arming. Give the waveform a second, then start again.');
       return false;
     }
 
     try {
-      if (typeof waveform.stop === 'function') {
-        waveform.stop();
+      if (typeof activeWaveform.stop === 'function') {
+        activeWaveform.stop();
       } else {
-        waveform.pause?.();
+        activeWaveform.pause?.();
       }
 
-      if (typeof waveform.setTime === 'function') {
-        waveform.setTime(0);
-      } else if (typeof waveform.seekTo === 'function') {
-        waveform.seekTo(0);
+      if (typeof activeWaveform.setTime === 'function') {
+        activeWaveform.setTime(0);
+      } else if (typeof activeWaveform.seekTo === 'function') {
+        activeWaveform.seekTo(0);
       }
 
       setCurrentTime(0);
-      await waveform.play();
+      await activeWaveform.play();
+      setCanResume(true);
+      return true;
+    } catch {
+      setError('Audio playback was blocked. Interact again to continue the duel.');
+      return false;
+    }
+  });
+
+  const resumePlayback = useEffectEvent(async () => {
+    if (!activeWaveform) {
+      return false;
+    }
+
+    try {
+      await activeWaveform.play();
+      setCanResume(true);
       return true;
     } catch {
       setError('Audio playback was blocked. Interact again to continue the duel.');
@@ -265,8 +292,9 @@ export default function App({ initialLibrary }) {
   });
 
   const finishRound = useEffectEvent((outcome, playerTimeMs) => {
-    waveform?.pause?.();
+    activeWaveform?.pause?.();
     setIsPlaying(false);
+    setCanResume(false);
     setFeedback(null);
     setRunState('result');
     setResult(buildResult(challenge, outcome, playerTimeMs));
@@ -297,12 +325,17 @@ export default function App({ initialLibrary }) {
   }
 
   async function handleTogglePlayback() {
-    if (!waveform) {
+    if (!activeWaveform) {
       return;
     }
 
     if (runState === 'live' && isPlaying) {
-      waveform.pause?.();
+      activeWaveform.pause?.();
+      return;
+    }
+
+    if (runState === 'live' && canResume) {
+      await resumePlayback();
       return;
     }
 
@@ -357,220 +390,92 @@ export default function App({ initialLibrary }) {
     }
   }
 
+  function handleSurrender() {
+    if (runState !== 'live') {
+      return;
+    }
+
+    finishRound('forfeit', Math.min(currentTime, MAX_GUESS_MS));
+  }
+
+  async function handleReplayReview() {
+    await playFromStart();
+  }
+
+  if (result) {
+    return (
+      <>
+        <WaveformHUD
+          audioSrc={challenge.audioSrc}
+          hidden
+          onFinish={() => {
+            setIsPlaying(false);
+            setCanResume(false);
+          }}
+          onPlayStateChange={setIsPlaying}
+          onReady={setReviewWaveform}
+          onTimeUpdate={setCurrentTime}
+        />
+        <ResultReviewPage
+          canReplay={Boolean(reviewWaveform)}
+          challenge={challenge}
+          dimensions={TRACK_DIMENSIONS}
+          marker={marker}
+          onNextChallenge={handleNextChallenge}
+          onReplayAudio={handleReplayReview}
+          onRetry={handleRetry}
+          result={result}
+          telemetryPath={telemetryPath}
+        />
+      </>
+    );
+  }
+
   return (
     <PosterStage challenge={challenge} result={result} runState={runState}>
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.12fr)_380px] xl:items-start">
-        <div className="grid gap-5">
-          <header className="glass-panel overflow-hidden rounded-[32px] border border-white/12 p-5 sm:p-7 lg:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="hud-label">f1 guess / blow your mind mode</p>
-              <div className="flex flex-wrap gap-2">
-                <StatPill label="Challenge Pool" value={String(DUEL_POOL.length).padStart(2, '0')} />
-                <StatPill label="Cutoff" value={maxTimeLabel} />
-                <StatPill label="Benchmark" value={benchmarkLabel} />
-              </div>
-            </div>
+        <WaveformHUD
+          audioSrc={challenge.audioSrc}
+        onFinish={() => {
+          setIsPlaying(false);
+          setCanResume(false);
+        }}
+        onPlayStateChange={setIsPlaying}
+        onReady={setLiveWaveform}
+        onTimeUpdate={setCurrentTime}
+      />
 
-            <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
-              <div>
-                <h1 className="hero-display max-w-[11ch] text-[3.4rem] font-semibold leading-[0.88] tracking-[-0.08em] text-white sm:text-[4.4rem] lg:text-[5.5rem]">
-                  Can you beat Max by ear?
-                </h1>
-                <p className="mt-5 max-w-[40rem] text-base leading-8 text-stone-300/84">
-                  A one-minute headset duel inspired by Verstappen&apos;s onboard challenge on Instagram.
-                  No maps. No labels. No telemetry until the round is over. Just one engine note and your nerve.
-                </p>
-              </div>
-
-              <div className="grid gap-3 rounded-[28px] border border-white/10 bg-black/18 p-4">
-                <HeroMicroCard title="What counts" value="Circuit, city, country, alias" />
-                <HeroMicroCard title="Loss state" value="Slower than Max or 60s timeout" />
-              </div>
-            </div>
-          </header>
-
-          <WaveformHUD
-            audioSrc={challenge.audioSrc}
-            benchmarkLabel={benchmarkLabel}
-            elapsedMs={displayElapsedMs}
-            isPlaying={isPlaying}
-            onFinish={() => setIsPlaying(false)}
-            onPlayStateChange={setIsPlaying}
-            onReady={setWaveform}
-            onTimeUpdate={setCurrentTime}
+      <div className="mt-auto px-6 pb-10 sm:px-8 sm:pb-12">
+        <div className="ml-auto grid w-full max-w-[22rem] grid-cols-[minmax(0,1fr)_118px] items-end gap-3">
+          <div className="min-w-0">
+            <InteractionDock
+              answerValue={answerValue}
+              canStart={Boolean(liveWaveform)}
+              canResume={canResume}
+              feedback={feedback}
+              isPlaying={isPlaying}
+              onAnswerChange={setAnswerValue}
+              onAnswerSubmit={handleAnswerSubmit}
+              onStart={handleStart}
+              onSurrender={handleSurrender}
+              onTogglePlayback={handleTogglePlayback}
+              runState={runState}
+            />
+          </div>
+          <TimerRing
+            benchmarkMs={currentBenchmarkMs}
+            currentTime={displayElapsedMs}
+            durationMs={MAX_GUESS_MS}
             result={result}
             runState={runState}
           />
-
-          {error ? (
-            <div className="rounded-[22px] border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-              {error}
-            </div>
-          ) : null}
-
-          {!result ? null : (
-            <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-              <TrackHUD
-                challenge={challenge}
-                dimensions={TRACK_DIMENSIONS}
-                marker={marker}
-                telemetryPath={telemetryPath}
-              />
-
-              <div className="grid gap-4">
-                <section className="glass-panel rounded-[30px] border border-white/12 p-4">
-                  <p className="hud-label">debrief answer</p>
-                  <h2 className="mt-3 text-[1.5rem] font-semibold text-white">{challenge.trackName}</h2>
-                  <p className="mt-2 text-sm leading-6 text-stone-300/88">
-                    {challenge.trackCountry} · {challenge.driverName} #{challenge.driverNumber || '00'}
-                  </p>
-                  <p className="mt-4 text-sm leading-6 text-stone-400">
-                    Benchmark set at {benchmarkLabel}. Your duel locked at {formatScoreTime(result.playerTimeMs)}.
-                  </p>
-                </section>
-
-                <TelemetryStrip hudState={hudState} />
-              </div>
-            </section>
-          )}
         </div>
+      </div>
 
-        <aside className="grid gap-5 xl:sticky xl:top-6">
-          <section className="glass-panel overflow-hidden rounded-[32px] border border-white/12 p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="hud-label">duel cockpit</p>
-                <h2 className="mt-3 text-[1.6rem] font-semibold leading-tight text-white">One screen. One clock. One shot.</h2>
-              </div>
-              <button
-                aria-controls="benchmark-drawer"
-                aria-expanded={showBenchmarks}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-stone-300 transition hover:border-white/30"
-                onClick={() => setShowBenchmarks(true)}
-                type="button"
-              >
-                Hidden Pool
-              </button>
-            </div>
-
-            <div className="mt-6 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="hud-label">race state</p>
-                  <p className="mt-2 text-sm text-stone-300/80">Current line to beat</p>
-                </div>
-                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-stone-200">
-                  {runState === 'result' ? 'locked' : runState}
-                </span>
-              </div>
-              <div className="flex justify-center">
-                <TimerRing
-                  benchmarkMs={currentBenchmarkMs}
-                  currentTime={displayElapsedMs}
-                  durationMs={MAX_GUESS_MS}
-                  result={result}
-                  runState={runState}
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <CompactMetric label="Max line" value={benchmarkLabel} />
-              <CompactMetric label="Hard stop" value={maxTimeLabel} />
-            </div>
-
-            <div className="mt-5">
-              <AnswerDock
-                answerValue={answerValue}
-                benchmarkLabel={benchmarkLabel}
-                canStart={Boolean(waveform && !error)}
-                feedback={feedback}
-                isPlaying={isPlaying}
-                maxTimeLabel={maxTimeLabel}
-                onAnswerChange={setAnswerValue}
-                onAnswerSubmit={handleAnswerSubmit}
-                onNextChallenge={handleNextChallenge}
-                onRetry={handleRetry}
-                onStart={handleStart}
-                onTogglePlayback={handleTogglePlayback}
-                result={result}
-                runState={runState}
-              />
-            </div>
-          </section>
-        </aside>
-      </section>
-
-      <aside
-        aria-hidden={!showBenchmarks}
-        className={`benchmark-drawer fixed inset-y-0 right-0 z-30 w-[min(100%,24rem)] border-l border-white/10 bg-[rgba(4,6,11,0.94)] p-5 shadow-[-24px_0_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition ${
-          showBenchmarks ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        id="benchmark-drawer"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="hud-label">hidden challenge pool</p>
-            <h2 className="mt-3 text-[1.45rem] font-semibold text-white">Seven benchmark laps from Max's video.</h2>
-            <p className="mt-3 text-sm leading-6 text-stone-300/88">
-              This stays off-stage so the duel does not leak track names. Open only when you want the archive.
-            </p>
-          </div>
-          <button
-            className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[11px] uppercase tracking-[0.22em] text-stone-300 transition hover:border-white/30"
-            onClick={() => setShowBenchmarks(false)}
-            type="button"
-          >
-            Close
-          </button>
+      {error ? (
+        <div className="pointer-events-none absolute inset-x-6 top-28 z-20 rounded-full border border-white/20 bg-black/28 px-4 py-2 text-center text-xs text-white/90 backdrop-blur-xl">
+          {error}
         </div>
-
-        <div className="mt-6 grid gap-3">
-          {DUEL_POOL.map((entry) => (
-            <article className="rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-3" key={entry.id}>
-              <p className="hud-label">{entry.label}</p>
-              <strong className="mt-2 block text-[1.2rem] font-semibold text-white">{formatScoreTime(entry.benchmarkMs)}</strong>
-              <p className="mt-2 text-xs leading-5 text-stone-400">Verstappen benchmark for this circuit.</p>
-            </article>
-          ))}
-        </div>
-      </aside>
-
-      {showBenchmarks ? (
-        <button
-          aria-label="Close hidden challenge pool"
-          className="fixed inset-0 z-20 bg-black/45 backdrop-blur-[2px]"
-          onClick={() => setShowBenchmarks(false)}
-          type="button"
-        />
       ) : null}
     </PosterStage>
-  );
-}
-
-function StatPill({ label, value }) {
-  return (
-    <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-left backdrop-blur-xl">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
-    </div>
-  );
-}
-
-function HeroMicroCard({ title, value }) {
-  return (
-    <article className="rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-3">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-white">{value}</p>
-    </article>
-  );
-}
-
-function CompactMetric({ label, value }) {
-  return (
-    <div className="rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold tracking-[-0.04em] text-white">{value}</p>
-    </div>
   );
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import App from '../src/player/App.jsx';
 
 describe('App', () => {
-  it('renders the duel shell with waveform, timer, and answer controls', () => {
+  it('renders the stripped poster layout with the earphone portrait, waveform, timer, and start controls', () => {
     const markup = renderToStaticMarkup(
       <App
         initialLibrary={[{
@@ -25,11 +25,15 @@ describe('App', () => {
       />
     );
 
-    expect(markup).toContain('Can you beat Max by ear?');
     expect(markup).toContain('data-testid="poster-stage"');
     expect(markup).toContain('data-testid="waveform-hud"');
     expect(markup).toContain('data-testid="timer-ring"');
-    expect(markup).toContain('data-testid="answer-dock"');
-    expect(markup).toContain('Hidden Pool');
+    expect(markup).toContain('data-testid="interaction-dock"');
+    expect(markup).toContain('/assets/max_with_earphone.jpeg');
+    expect(markup).toContain('Start Duel');
+    expect(markup).not.toContain('Can you beat Max by ear?');
+    expect(markup).not.toContain('Hidden Pool');
+    expect(markup).not.toContain('data-testid="answer-dock"');
+    expect(markup).not.toContain('data-testid="track-hud"');
   });
 });

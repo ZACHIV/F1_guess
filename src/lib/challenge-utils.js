@@ -5,7 +5,7 @@ export function normalizeChallenge(challenge) {
     ...challenge,
     answerAliases: Array.isArray(challenge.answerAliases) ? challenge.answerAliases : [],
     options: Array.isArray(challenge.options) ? challenge.options : [],
-    posterSrc: challenge.posterSrc || '/assets/max-verstappen.jpg',
+    posterSrc: challenge.posterSrc || '/assets/max_with_earphone.jpeg',
     telemetryOffsetMs: Number.isFinite(Number(challenge.telemetryOffsetMs)) ? Number(challenge.telemetryOffsetMs) : 0,
     hasAudio,
     statusLabel: hasAudio ? 'Clip ready' : 'Clip missing',
