@@ -1,115 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-
-const TRACKS = [
-  {
-    id: 'monaco',
-    issue: '01',
-    country: 'Monaco',
-    circuit: 'Monte Carlo',
-    note: 'Harbour run',
-    asset: '/assets/tracks/monaco-quali-lando-norris-2025.svg',
-    colors: ['#f6efe3', '#dbccb4', '#f9f6ef']
-  },
-  {
-    id: 'japan',
-    issue: '02',
-    country: 'Japan',
-    circuit: 'Suzuka',
-    note: 'Figure-eight line',
-    asset: '/assets/tracks/japan-quali-max-verstappen-2025.svg',
-    colors: ['#ede7ea', '#cbb5c2', '#faf6f7']
-  },
-  {
-    id: 'saudi',
-    issue: '03',
-    country: 'Saudi Arabia',
-    circuit: 'Jeddah',
-    note: 'Night velocity',
-    asset: '/assets/tracks/saudi-arabia-quali-max-verstappen-2025.svg',
-    colors: ['#edf4ef', '#b6d2b9', '#f6faf7']
-  },
-  {
-    id: 'imola',
-    issue: '04',
-    country: 'Italy',
-    circuit: 'Imola',
-    note: 'Old-school rhythm',
-    asset: '/assets/tracks/imola-quali-oscar-piastri-2025.svg',
-    colors: ['#efe7e0', '#d5b49a', '#faf8f3']
-  },
-  {
-    id: 'silverstone',
-    issue: '05',
-    country: 'Great Britain',
-    circuit: 'Silverstone',
-    note: 'High-speed sweep',
-    asset: '/assets/tracks/great-britain-quali-max-verstappen-2025.svg',
-    colors: ['#e7ecf4', '#b5c1d9', '#f8fafc']
-  },
-  {
-    id: 'spa',
-    issue: '06',
-    country: 'Belgium',
-    circuit: 'Spa-Francorchamps',
-    note: 'Ardennes climb',
-    asset: '/assets/tracks/belgium-quali-lando-norris-2025.svg',
-    colors: ['#ede8e2', '#cbb49d', '#fbf7f1']
-  },
-  {
-    id: 'hungary',
-    issue: '07',
-    country: 'Hungary',
-    circuit: 'Hungaroring',
-    note: 'Compact pressure',
-    asset: '/assets/tracks/hungary-quali-charles-leclerc-2025.svg',
-    colors: ['#ece7d8', '#d7bd87', '#fbf9f0']
-  },
-  {
-    id: 'singapore',
-    issue: '08',
-    country: 'Singapore',
-    circuit: 'Marina Bay',
-    note: 'Midnight corners',
-    asset: '/assets/tracks/singapore-quali-george-russell-2025.svg',
-    colors: ['#e7e5ee', '#afa9c6', '#f8f8fb']
-  },
-  {
-    id: 'austin',
-    issue: '09',
-    country: 'United States',
-    circuit: 'Circuit of the Americas',
-    note: 'Texas rise',
-    asset: '/assets/tracks/united-states-quali-max-verstappen-2025.svg',
-    colors: ['#f3e6e1', '#d9b2a3', '#fcf7f5']
-  },
-  {
-    id: 'vegas',
-    issue: '10',
-    country: 'Las Vegas',
-    circuit: 'Las Vegas Strip',
-    note: 'Neon straight',
-    asset: '/assets/tracks/las-vegas-quali-lando-norris-2025.svg',
-    colors: ['#ece6f2', '#c7b5de', '#fbf9fd']
-  },
-  {
-    id: 'abu-dhabi',
-    issue: '11',
-    country: 'Abu Dhabi',
-    circuit: 'Yas Marina',
-    note: 'Twilight marina',
-    asset: '/assets/tracks/abu-dhabi-quali-max-verstappen-2025.svg',
-    colors: ['#e6eeef', '#a7c8cb', '#f7fbfb']
-  },
-  {
-    id: 'australia',
-    issue: '12',
-    country: 'Australia',
-    circuit: 'Albert Park',
-    note: 'Lakeside balance',
-    asset: '/assets/tracks/australia-quali-lando-norris-2025.svg',
-    colors: ['#eef0ea', '#bdccb6', '#fbfcf9']
-  }
-];
+import { ARCHIVE_TRACKS } from './archive-metadata.js';
 
 const MOBILE_BREAKPOINT = 720;
 
@@ -135,6 +25,7 @@ export default function ArchiveApp() {
 
   const [stageWidth, setStageWidth] = useState(1440);
   const [offset, setOffset] = useState(0);
+  const [selectedTrackId, setSelectedTrackId] = useState('');
 
   const layout = useMemo(() => {
     const compact = stageWidth < MOBILE_BREAKPOINT;
@@ -152,7 +43,9 @@ export default function ArchiveApp() {
     };
   }, [stageWidth]);
 
-  const totalSpan = layout.span * TRACKS.length;
+  const totalSpan = layout.span * ARCHIVE_TRACKS.length;
+  const selectedIndex = ARCHIVE_TRACKS.findIndex((track) => track.id === selectedTrackId);
+  const selectedTrack = selectedIndex >= 0 ? ARCHIVE_TRACKS[selectedIndex] : null;
 
   useEffect(() => {
     if (!stageRef.current) {
@@ -176,7 +69,7 @@ export default function ArchiveApp() {
       const deltaSeconds = (timestamp - lastTimestampRef.current) / 1000;
       lastTimestampRef.current = timestamp;
 
-      if (!dragRef.current.active) {
+      if (!dragRef.current.active && !selectedTrackId) {
         offsetRef.current -= layout.speed * deltaSeconds;
         setOffset(offsetRef.current);
       }
@@ -190,10 +83,41 @@ export default function ArchiveApp() {
       window.cancelAnimationFrame(frameRef.current);
       lastTimestampRef.current = 0;
     };
-  }, [layout.speed]);
+  }, [layout.speed, selectedTrackId]);
+
+  useEffect(() => {
+    if (!selectedTrackId) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedTrackId('');
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        setSelectedTrackId(ARCHIVE_TRACKS[(selectedIndex + 1) % ARCHIVE_TRACKS.length].id);
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        setSelectedTrackId(
+          ARCHIVE_TRACKS[(selectedIndex - 1 + ARCHIVE_TRACKS.length) % ARCHIVE_TRACKS.length].id
+        );
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, selectedTrackId]);
 
   const beginDrag = (event) => {
-    if (!stageRef.current) {
+    if (!stageRef.current || selectedTrackId) {
+      return;
+    }
+
+    if (event.target instanceof Element && event.target.closest('.track-card__button')) {
       return;
     }
 
@@ -234,9 +158,27 @@ export default function ArchiveApp() {
   };
 
   const handleWheel = (event) => {
+    if (selectedTrackId) {
+      return;
+    }
+
     offsetRef.current -= event.deltaY * 0.35;
     setOffset(offsetRef.current);
     lastTimestampRef.current = 0;
+  };
+
+  const closeDetail = () => {
+    setSelectedTrackId('');
+  };
+
+  const showAdjacentTrack = (direction) => {
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    setSelectedTrackId(
+      ARCHIVE_TRACKS[(selectedIndex + direction + ARCHIVE_TRACKS.length) % ARCHIVE_TRACKS.length].id
+    );
   };
 
   return (
@@ -254,7 +196,7 @@ export default function ArchiveApp() {
 
       <section
         ref={stageRef}
-        className="archive-stage"
+        className={`archive-stage${selectedTrack ? ' archive-stage--detail' : ''}`}
         onPointerDown={beginDrag}
         onPointerMove={moveDrag}
         onPointerUp={endDrag}
@@ -266,7 +208,7 @@ export default function ArchiveApp() {
         <div className="archive-stage__fog" />
         <div className="archive-stage__floor" />
         <div className="archive-stage__viewport">
-          {TRACKS.map((track, index) => {
+          {ARCHIVE_TRACKS.map((track, index) => {
             const position = wrapOffset(index * layout.span + offset, totalSpan);
             const normalizedDistance = Math.min(
               Math.abs(position) / (stageWidth * (layout.compact ? 0.62 : 0.52)),
@@ -282,7 +224,7 @@ export default function ArchiveApp() {
             return (
               <article
                 key={track.id}
-                className="track-card"
+                className={`track-card${selectedTrackId === track.id ? ' track-card--selected' : ''}${selectedTrack ? ' track-card--muted' : ''}`}
                 style={{
                   '--card-width': `${layout.cardWidth}px`,
                   '--card-height': `${layout.cardHeight}px`,
@@ -295,28 +237,143 @@ export default function ArchiveApp() {
                   transform: `translate3d(calc(${position}px - 50%), ${translateY}px, ${translateZ}px) rotateY(${rotateY}deg) scale(${scale})`
                 }}
               >
-                <div className="track-card__inner">
-                  <div className="track-card__meta">
-                    <span>{track.country}</span>
-                    <span>{track.issue}</span>
-                  </div>
-                  <div className="track-card__visual">
-                    <img
-                      src={track.asset}
-                      alt={`${track.country} ${track.circuit}`}
-                      draggable="false"
-                    />
-                  </div>
-                  <div className="track-card__footer">
-                    <p>{track.note}</p>
-                    <h2>{track.circuit}</h2>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  className="track-card__button"
+                  aria-label={`Open ${track.country} dossier`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => setSelectedTrackId(track.id)}
+                >
+                  <TrackCardContent track={track} />
+                </button>
               </article>
             );
           })}
         </div>
+        {selectedTrack ? (
+          <div
+            className="archive-detail"
+            role="dialog"
+            aria-label={`${selectedTrack.circuit} archive detail`}
+          >
+            <button
+              type="button"
+              className="archive-detail__backdrop"
+              aria-label="Close archive detail"
+              onClick={closeDetail}
+            />
+            <div
+              className="archive-detail__layout"
+              data-testid="archive-detail-layout"
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  closeDetail();
+                }
+              }}
+            >
+              <div className="archive-detail__toolbar">
+                <button
+                  type="button"
+                  className="archive-detail__nav archive-detail__nav--prev"
+                  aria-label="Previous circuit"
+                  onClick={() => showAdjacentTrack(-1)}
+                >
+                  Previous
+                </button>
+                <p className="archive-detail__counter">
+                  {selectedTrack.issue} / {String(ARCHIVE_TRACKS.length).padStart(2, '0')}
+                </p>
+                <button
+                  type="button"
+                  className="archive-detail__nav archive-detail__nav--next"
+                  aria-label="Next circuit"
+                  onClick={() => showAdjacentTrack(1)}
+                >
+                  Next
+                </button>
+              </div>
+
+              <div className="archive-detail__cluster archive-detail__cluster--top-left">
+                <p className="archive-detail__label">Country</p>
+                <h3>{selectedTrack.country}</h3>
+                <p className="archive-detail__meta">{selectedTrack.city}</p>
+                <p className="archive-detail__meta">{selectedTrack.firstGrandPrix}</p>
+              </div>
+
+              <div className="archive-detail__cluster archive-detail__cluster--top-right">
+                <p className="archive-detail__label">Archive Index</p>
+                <h3>Issue {selectedTrack.issue}</h3>
+                <p className="archive-detail__meta">Circuit dossier</p>
+                <p className="archive-detail__meta">{selectedTrack.note}</p>
+              </div>
+
+              <article
+                className="archive-detail__card"
+                style={{
+                  '--detail-card-start': selectedTrack.colors[0],
+                  '--detail-card-end': selectedTrack.colors[1],
+                  '--detail-card-sheen': selectedTrack.colors[2]
+                }}
+              >
+                <TrackCardContent track={selectedTrack} />
+              </article>
+
+              <div className="archive-detail__cluster archive-detail__cluster--bottom-left">
+                <p className="archive-detail__label">Curator's Note</p>
+                <p className="archive-detail__copy">{selectedTrack.curatorNote}</p>
+              </div>
+
+              <div className="archive-detail__cluster archive-detail__cluster--bottom-right">
+                <p className="archive-detail__label">Circuit Data</p>
+                <dl className="archive-detail__specs">
+                  <div>
+                    <dt>Length</dt>
+                    <dd>{selectedTrack.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Turns</dt>
+                    <dd>{selectedTrack.turns}</dd>
+                  </div>
+                  <div>
+                    <dt>First Grand Prix</dt>
+                    <dd>{selectedTrack.firstGrandPrix}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <button
+                type="button"
+                className="archive-detail__close"
+                onClick={closeDetail}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
+  );
+}
+
+function TrackCardContent({ track }) {
+  return (
+    <div className="track-card__inner">
+      <div className="track-card__meta">
+        <span>{track.country}</span>
+        <span>{track.issue}</span>
+      </div>
+      <div className="track-card__visual">
+        <img
+          src={track.asset}
+          alt={`${track.country} ${track.circuit}`}
+          draggable="false"
+        />
+      </div>
+      <div className="track-card__footer">
+        <p>{track.note}</p>
+        <h2>{track.circuit}</h2>
+      </div>
+    </div>
   );
 }
