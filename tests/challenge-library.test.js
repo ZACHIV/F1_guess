@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   duplicateChallengeRecord,
@@ -131,5 +133,39 @@ describe('getChallengeLibrarySummary', () => {
       categories: ['Qualifying', 'Race'],
       statuses: ['draft', 'ready']
     });
+  });
+});
+
+describe('azerbaijan challenge assets', () => {
+  it('uses real Azerbaijan telemetry instead of the Monza placeholder', () => {
+    const challengeLibrary = JSON.parse(
+      readFileSync(resolve(process.cwd(), 'src/data/challenge-library.json'), 'utf8')
+    );
+    const azerbaijan = challengeLibrary.find((record) => record.id === 'azerbaijan-quali-max-verstappen-2025');
+
+    expect(azerbaijan).toBeTruthy();
+    expect(azerbaijan.notes).not.toContain('manual placeholder');
+    expect(azerbaijan.telemetrySource).not.toContain('Manual placeholder');
+    expect(azerbaijan.telemetrySource).toContain('Azerbaijan');
+
+    const azerbaijanLocation = readFileSync(
+      resolve(process.cwd(), 'public/telemetry/azerbaijan-quali-max-verstappen-2025.location.json'),
+      'utf8'
+    );
+    const italyLocation = readFileSync(
+      resolve(process.cwd(), 'public/telemetry/italy-quali-max-verstappen-2025.location.json'),
+      'utf8'
+    );
+    const azerbaijanCarData = readFileSync(
+      resolve(process.cwd(), 'public/telemetry/azerbaijan-quali-max-verstappen-2025.car-data.json'),
+      'utf8'
+    );
+    const italyCarData = readFileSync(
+      resolve(process.cwd(), 'public/telemetry/italy-quali-max-verstappen-2025.car-data.json'),
+      'utf8'
+    );
+
+    expect(azerbaijanLocation).not.toBe(italyLocation);
+    expect(azerbaijanCarData).not.toBe(italyCarData);
   });
 });
