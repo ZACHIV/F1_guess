@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ARCHIVE_TRACKS } from './archive-metadata.js';
+import { ARCHIVE_THEMES, ARCHIVE_TRACKS } from './archive-metadata.js';
 import { useArchiveAmbientLoop } from './use-archive-ambient-loop.js';
 
 const MOBILE_BREAKPOINT = 720;
@@ -27,6 +27,7 @@ export default function ArchiveApp() {
   const [stageWidth, setStageWidth] = useState(1440);
   const [offset, setOffset] = useState(0);
   const [selectedTrackId, setSelectedTrackId] = useState('');
+  const [activeTheme, setActiveTheme] = useState('all');
 
   const layout = useMemo(() => {
     const compact = stageWidth < MOBILE_BREAKPOINT;
@@ -44,10 +45,26 @@ export default function ArchiveApp() {
     };
   }, [stageWidth]);
 
-  const totalSpan = layout.span * ARCHIVE_TRACKS.length;
-  const selectedIndex = ARCHIVE_TRACKS.findIndex((track) => track.id === selectedTrackId);
-  const selectedTrack = selectedIndex >= 0 ? ARCHIVE_TRACKS[selectedIndex] : null;
+  const filteredTracks = useMemo(() => (
+    activeTheme === 'all'
+      ? ARCHIVE_TRACKS
+      : ARCHIVE_TRACKS.filter((track) => track.themes.includes(activeTheme))
+  ), [activeTheme]);
+  const totalSpan = layout.span * filteredTracks.length;
+  const selectedIndex = filteredTracks.findIndex((track) => track.id === selectedTrackId);
+  const selectedTrack = selectedIndex >= 0 ? filteredTracks[selectedIndex] : null;
   const ambientLoop = useArchiveAmbientLoop(selectedTrack);
+  const archiveStats = useMemo(() => ({
+    circuits: ARCHIVE_TRACKS.length,
+    countries: new Set(ARCHIVE_TRACKS.map((track) => track.country)).size,
+    playable: ARCHIVE_TRACKS.filter((track) => track.audioSrc).length
+  }), []);
+
+  useEffect(() => {
+    if (selectedTrackId && !filteredTracks.some((track) => track.id === selectedTrackId)) {
+      setSelectedTrackId('');
+    }
+  }, [filteredTracks, selectedTrackId]);
 
   useEffect(() => {
     if (!stageRef.current) {
@@ -99,20 +116,20 @@ export default function ArchiveApp() {
       }
 
       if (event.key === 'ArrowRight') {
-        setSelectedTrackId(ARCHIVE_TRACKS[(selectedIndex + 1) % ARCHIVE_TRACKS.length].id);
+        setSelectedTrackId(filteredTracks[(selectedIndex + 1) % filteredTracks.length].id);
         return;
       }
 
       if (event.key === 'ArrowLeft') {
         setSelectedTrackId(
-          ARCHIVE_TRACKS[(selectedIndex - 1 + ARCHIVE_TRACKS.length) % ARCHIVE_TRACKS.length].id
+          filteredTracks[(selectedIndex - 1 + filteredTracks.length) % filteredTracks.length].id
         );
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex, selectedTrackId]);
+  }, [filteredTracks, selectedIndex, selectedTrackId]);
 
   const beginDrag = (event) => {
     if (!stageRef.current || selectedTrackId) {
@@ -179,14 +196,22 @@ export default function ArchiveApp() {
     }
 
     setSelectedTrackId(
-      ARCHIVE_TRACKS[(selectedIndex + direction + ARCHIVE_TRACKS.length) % ARCHIVE_TRACKS.length].id
+      filteredTracks[(selectedIndex + direction + filteredTracks.length) % filteredTracks.length].id
     );
+  };
+
+  const jumpIntoArchive = () => {
+    const pool = filteredTracks.length ? filteredTracks : ARCHIVE_TRACKS;
+    const nextTrack = pool[Math.floor(Math.random() * pool.length)];
+    if (nextTrack) {
+      setSelectedTrackId(nextTrack.id);
+    }
   };
 
   return (
     <main className="archive-page">
       <header className="archive-header">
-        <div>
+        <div className="archive-header__masthead">
           <p className="archive-header__eyebrow">PADDOCK ARCHIVE</p>
           <p className="archive-header__subcopy">Formula One circuit selection</p>
         </div>
@@ -195,6 +220,58 @@ export default function ArchiveApp() {
           <span>Curated selection</span>
         </div>
       </header>
+
+      <section className="archive-intro">
+        <div className="archive-intro__copy">
+          <p className="archive-intro__kicker">Continuous race ambience</p>
+          <h1>Circuit Noise Archive</h1>
+          <p className="archive-intro__lede">
+            A curated listening gallery built from 2025 qualifying onboard recordings, re-cut into
+            looping ambient studies so each circuit reads like a place, not just a lap.
+          </p>
+        </div>
+        <aside className="archive-intro__panel">
+          <div className="archive-intro__stats">
+            <div>
+              <strong>{archiveStats.circuits}</strong>
+              <span>Circuits</span>
+            </div>
+            <div>
+              <strong>{archiveStats.countries}</strong>
+              <span>Countries</span>
+            </div>
+            <div>
+              <strong>{archiveStats.playable}</strong>
+              <span>Audio studies</span>
+            </div>
+          </div>
+          <p className="archive-intro__note">
+            Inspired by white-noise interfaces that start instantly and gallery sites that invite
+            wandering, not menu-diving.
+          </p>
+          <button
+            type="button"
+            className="archive-intro__jump"
+            aria-label="Jump into the archive"
+            onClick={jumpIntoArchive}
+          >
+            Jump in
+          </button>
+        </aside>
+      </section>
+
+      <div className="archive-filters" role="toolbar" aria-label="Archive curation filters">
+        {ARCHIVE_THEMES.map((theme) => (
+          <button
+            key={theme.id}
+            type="button"
+            className={`archive-filter${activeTheme === theme.id ? ' is-active' : ''}`}
+            onClick={() => setActiveTheme(theme.id)}
+          >
+            {theme.label}
+          </button>
+        ))}
+      </div>
 
       <section
         ref={stageRef}
@@ -210,7 +287,7 @@ export default function ArchiveApp() {
         <div className="archive-stage__fog" />
         <div className="archive-stage__floor" />
         <div className="archive-stage__viewport">
-          {ARCHIVE_TRACKS.map((track, index) => {
+          {filteredTracks.map((track, index) => {
             const position = wrapOffset(index * layout.span + offset, totalSpan);
             const normalizedDistance = Math.min(
               Math.abs(position) / (stageWidth * (layout.compact ? 0.62 : 0.52)),
@@ -274,6 +351,9 @@ export default function ArchiveApp() {
               }}
             >
               <div className="archive-detail__toolbar">
+                <p className="archive-detail__badge">
+                  {ambientLoop.isEnabled ? 'Race ambience live' : 'Archive paused'}
+                </p>
                 <button
                   type="button"
                   className="archive-detail__nav archive-detail__nav--prev"
@@ -304,6 +384,17 @@ export default function ArchiveApp() {
                       ? 'Ambience on'
                       : 'Ambience off'}
                 </button>
+                <label className="archive-detail__volume">
+                  <span>Level</span>
+                  <input
+                    type="range"
+                    min="0.16"
+                    max="0.62"
+                    step="0.01"
+                    value={ambientLoop.volumeLevel}
+                    onChange={(event) => ambientLoop.setVolumeLevel(Number(event.target.value))}
+                  />
+                </label>
                 <button
                   type="button"
                   className="archive-detail__nav archive-detail__nav--next"
@@ -319,6 +410,7 @@ export default function ArchiveApp() {
                 <h3>{selectedTrack.country}</h3>
                 <p className="archive-detail__meta">{selectedTrack.city}</p>
                 <p className="archive-detail__meta">{selectedTrack.firstGrandPrix}</p>
+                <p className="archive-detail__meta">{selectedTrack.themes.join(' · ')}</p>
               </div>
 
               <div className="archive-detail__cluster archive-detail__cluster--top-right">

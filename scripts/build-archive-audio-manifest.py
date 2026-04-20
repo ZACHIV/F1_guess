@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import argparse
-import audioop
 import json
 import math
+import re
 import statistics
 import subprocess
 import sys
@@ -102,7 +102,6 @@ def detect_trailing_speech_start_ms(
 ) -> tuple[int, dict[str, float]]:
     with wave.open(str(analysis_path), "rb") as wav_file:
         frame_rate = wav_file.getframerate()
-        sample_width = wav_file.getsampwidth()
         total_frames = wav_file.getnframes()
         frames_per_window = max(1, int(frame_rate * window_ms / 1000))
         total_windows = math.ceil(total_frames / frames_per_window)
@@ -112,7 +111,7 @@ def detect_trailing_speech_start_ms(
             chunk = wav_file.readframes(frames_per_window)
             if not chunk:
                 break
-            rms_values.append(audioop.rms(chunk, sample_width))
+            rms_values.append(rms_pcm16(chunk))
 
     tail_windows = max(10, int(tail_seconds * 1000 / window_ms))
     start_window = max(0, len(rms_values) - tail_windows)
@@ -165,12 +164,15 @@ def build_manifest(slugs: set[str] | None) -> dict[str, dict[str, int]]:
         analysis_path = ensure_analysis_wav(vocals_path)
         speech_start_ms, diagnostics = detect_trailing_speech_start_ms(analysis_path)
         ambient_end_ms = min(max(tail_start_ms + speech_start_ms, 1500), duration_ms)
+        loudness = analyze_loudness(audio_path)
 
         manifest[challenge["id"]] = {
             "ambientEndMs": ambient_end_ms,
             "crossfadeMs": 3200,
             "sourceDurationMs": int(challenge.get("clipDurationMs") or 0),
             "speechDetectionMethod": diagnostics["method"],
+            "loudnessIntegrated": loudness["input_i"],
+            "volumeMultiplier": loudness["volume_multiplier"],
         }
 
         print(
@@ -199,6 +201,45 @@ def probe_duration_ms(audio_path: Path) -> int:
         text=True,
     )
     return int(float(completed.stdout.strip()) * 1000)
+
+
+def rms_pcm16(chunk: bytes) -> int:
+    samples = memoryview(chunk).cast("h")
+    if not samples:
+        return 0
+    mean_square = sum(sample * sample for sample in samples) / len(samples)
+    return int(math.sqrt(mean_square))
+
+
+def analyze_loudness(audio_path: Path, target_i: float = -20.0) -> dict[str, float]:
+    completed = subprocess.run(
+        [
+            "ffmpeg",
+            "-i",
+            str(audio_path),
+            "-af",
+            f"loudnorm=I={target_i}:LRA=7:TP=-2:print_format=json",
+            "-f",
+            "null",
+            "-",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    matches = re.findall(r"\{\s*\"input_i\".*?\}", completed.stderr, re.S)
+    if not matches:
+        raise RuntimeError(f"Unable to parse loudnorm output for {audio_path}")
+
+    payload = json.loads(matches[-1])
+    offset = float(payload["target_offset"])
+
+    return {
+        "input_i": float(payload["input_i"]),
+        "target_offset": offset,
+        "volume_multiplier": round(max(0.65, min(1.45, 10 ** (offset / 20))), 3),
+    }
 
 
 def main() -> None:

@@ -69,6 +69,18 @@ describe('ArchiveApp', () => {
     expect(screen.getByRole('button', { name: /open mexico dossier/i })).toBeInTheDocument();
   });
 
+  it('jump in opens a valid circuit dossier from the curated collection', () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    render(<ArchiveApp />);
+
+    fireEvent.click(screen.getByRole('button', { name: /jump into the archive/i }));
+
+    expect(screen.getByRole('dialog', { name: /albert park archive detail/i })).toBeInTheDocument();
+
+    randomSpy.mockRestore();
+  });
+
   it('opens an inline archive detail view for the selected circuit and closes on escape', () => {
     render(<ArchiveApp />);
 

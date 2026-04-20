@@ -64,6 +64,42 @@ export const ARCHIVE_TRACKS = challengeLibrary
       colors: ARCHIVE_PALETTES[index % ARCHIVE_PALETTES.length],
       audioSrc: challenge.audioSrc,
       ambientEndMs: archiveAudioManifest[challenge.id]?.ambientEndMs ?? Math.max((challenge.clipDurationMs ?? 0) - 3000, 0),
-      crossfadeMs: archiveAudioManifest[challenge.id]?.crossfadeMs ?? 3200
+      crossfadeMs: archiveAudioManifest[challenge.id]?.crossfadeMs ?? 3200,
+      volumeMultiplier: archiveAudioManifest[challenge.id]?.volumeMultiplier ?? 1,
+      themes: deriveThemes(challenge.id, detail.country ?? challenge.trackCountry)
     };
   });
+
+export const ARCHIVE_THEMES = [
+  { id: 'all', label: 'All circuits' },
+  { id: 'street', label: 'Street theater' },
+  { id: 'night', label: 'Night sessions' },
+  { id: 'speed', label: 'Temple of speed' },
+  { id: 'heritage', label: 'Heritage lines' }
+];
+
+function deriveThemes(id, country) {
+  const themes = new Set();
+
+  if (['monaco', 'saudi-arabia', 'azerbaijan', 'singapore', 'las-vegas', 'mexico'].some((token) => id.includes(token))) {
+    themes.add('street');
+  }
+
+  if (['bahrain', 'saudi-arabia', 'singapore', 'las-vegas', 'qatar', 'abu-dhabi'].some((token) => id.includes(token))) {
+    themes.add('night');
+  }
+
+  if (['italy', 'belgium', 'great-britain', 'austria', 'japan'].some((token) => id.includes(token))) {
+    themes.add('speed');
+  }
+
+  if (['monaco', 'italy', 'great-britain', 'belgium', 'japan', 'brazil', 'hungary', 'imola'].some((token) => id.includes(token))) {
+    themes.add('heritage');
+  }
+
+  if (!themes.size && ['Monaco', 'Italy', 'Belgium', 'Japan'].includes(country)) {
+    themes.add('heritage');
+  }
+
+  return [...themes];
+}

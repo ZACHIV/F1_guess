@@ -12,6 +12,7 @@ describe('archive audio manifest', () => {
       expect(archiveAudioManifest[challenge.id]).toBeTruthy();
       expect(archiveAudioManifest[challenge.id].ambientEndMs).toBeGreaterThan(0);
       expect(archiveAudioManifest[challenge.id].crossfadeMs).toBeGreaterThan(0);
+      expect(archiveAudioManifest[challenge.id].volumeMultiplier).toBeGreaterThan(0);
     }
   });
 });

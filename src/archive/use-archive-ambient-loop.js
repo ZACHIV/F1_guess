@@ -47,11 +47,27 @@ export function useArchiveAmbientLoop(track) {
   const [isEnabled, setIsEnabled] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
+  const [volumeLevel, setVolumeLevel] = useState(DEFAULT_VOLUME);
 
   useEffect(() => {
     setIsEnabled(true);
     setIsBlocked(false);
+    setVolumeLevel(DEFAULT_VOLUME);
   }, [track?.id]);
+
+  useEffect(() => {
+    const { active, queued } = audioPairRef.current;
+    const baseMultiplier = track?.volumeMultiplier ?? 1;
+
+    if (active) {
+      active.__baseVolume = volumeLevel * baseMultiplier;
+      active.volume = active.__baseVolume;
+    }
+
+    if (queued) {
+      queued.__baseVolume = volumeLevel * baseMultiplier;
+    }
+  }, [track?.volumeMultiplier, volumeLevel]);
 
   useEffect(() => {
     if (!track?.audioSrc || !track?.ambientEndMs || !isEnabled) {
@@ -67,7 +83,7 @@ export function useArchiveAmbientLoop(track) {
       audio.loop = false;
       audio.currentTime = 0;
       audio.volume = 0;
-      audio.__baseVolume = volume;
+      audio.__baseVolume = volume * (track.volumeMultiplier ?? 1);
       await audio.play?.();
       return audio;
     };
@@ -131,6 +147,8 @@ export function useArchiveAmbientLoop(track) {
     isEnabled,
     isBlocked,
     setIsEnabled,
+    volumeLevel,
+    setVolumeLevel,
     retry() {
       setIsBlocked(false);
       setIsEnabled(true);

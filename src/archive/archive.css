@@ -41,9 +41,12 @@ button {
 .archive-page {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   padding: 24px 28px 24px;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(236, 228, 211, 0.72), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(208, 222, 228, 0.55), transparent 26%);
 }
 
 .archive-header {
@@ -74,6 +77,132 @@ button {
   font-weight: 500;
 }
 
+.archive-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 2rem;
+  align-items: start;
+  padding: 1.2rem 0 0.6rem;
+  position: relative;
+  z-index: 3;
+}
+
+.archive-intro__kicker,
+.archive-intro__note,
+.archive-filter,
+.archive-detail__badge,
+.archive-detail__volume span {
+  font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.archive-intro__kicker {
+  margin: 0;
+  font-size: 0.56rem;
+  color: var(--archive-muted);
+}
+
+.archive-intro__copy h1 {
+  margin: 0.35rem 0 0.65rem;
+  font-size: clamp(2.9rem, 7vw, 5.9rem);
+  line-height: 0.88;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.archive-intro__lede {
+  margin: 0;
+  max-width: 48ch;
+  font-size: clamp(1.08rem, 1.55vw, 1.32rem);
+  line-height: 1.55;
+  color: rgba(22, 22, 22, 0.76);
+}
+
+.archive-intro__panel {
+  padding: 1.1rem 1.2rem 1.15rem;
+  border: 1px solid rgba(22, 22, 22, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.28)),
+    rgba(244, 242, 237, 0.78);
+  box-shadow:
+    0 20px 40px rgba(142, 133, 120, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.archive-intro__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.archive-intro__stats strong {
+  display: block;
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.archive-intro__stats span {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--archive-muted);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.archive-intro__note {
+  margin: 1rem 0 0;
+  font-size: 0.56rem;
+  line-height: 1.7;
+  color: rgba(22, 22, 22, 0.58);
+}
+
+.archive-intro__jump {
+  margin-top: 1rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(22, 22, 22, 0.8);
+  cursor: pointer;
+}
+
+.archive-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.2rem 0 0.7rem;
+  position: relative;
+  z-index: 3;
+}
+
+.archive-filter {
+  border: 1px solid rgba(22, 22, 22, 0.08);
+  padding: 0.54rem 0.82rem;
+  background: rgba(255, 255, 255, 0.42);
+  font-size: 0.54rem;
+  color: rgba(22, 22, 22, 0.52);
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.archive-filter.is-active,
+.archive-filter:hover {
+  color: rgba(22, 22, 22, 0.86);
+  border-color: rgba(22, 22, 22, 0.18);
+  background: rgba(255, 255, 255, 0.7);
+  transform: translateY(-1px);
+}
+
 .archive-header__subcopy {
   margin-top: 0.25rem;
   font-size: 0.52rem;
@@ -95,6 +224,7 @@ button {
   overflow: hidden;
   cursor: grab;
   touch-action: none;
+  min-height: 560px;
 }
 
 .archive-stage.is-dragging {
@@ -340,11 +470,17 @@ button {
 .archive-detail__nav,
 .archive-detail__sound,
 .archive-detail__close,
-.archive-detail__counter {
+.archive-detail__counter,
+.archive-detail__badge {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.56rem;
   text-transform: uppercase;
   letter-spacing: 0.18em;
+}
+
+.archive-detail__badge {
+  margin: 0;
+  color: rgba(22, 22, 22, 0.64);
 }
 
 .archive-detail__nav {
@@ -373,6 +509,22 @@ button {
 .archive-detail__counter {
   margin: 0;
   color: rgba(22, 22, 22, 0.42);
+}
+
+.archive-detail__volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(22, 22, 22, 0.52);
+}
+
+.archive-detail__volume span {
+  font-size: 0.54rem;
+}
+
+.archive-detail__volume input {
+  width: 88px;
+  accent-color: #171717;
 }
 
 .archive-detail__cluster--top-left {
@@ -516,6 +668,33 @@ button {
     padding: 18px 16px;
   }
 
+  .archive-intro {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-top: 0.9rem;
+  }
+
+  .archive-intro__copy h1 {
+    font-size: 2.8rem;
+  }
+
+  .archive-intro__stats {
+    gap: 0.55rem;
+  }
+
+  .archive-intro__stats strong {
+    font-size: 1.45rem;
+  }
+
+  .archive-filters {
+    gap: 0.45rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .archive-filter {
+    padding: 0.46rem 0.7rem;
+  }
+
   .archive-header {
     gap: 14px;
   }
@@ -527,6 +706,10 @@ button {
   .archive-stage__floor {
     inset: auto 2% 28%;
     height: 92px;
+  }
+
+  .archive-stage {
+    min-height: 480px;
   }
 
   .track-card {
@@ -552,8 +735,10 @@ button {
   .archive-detail__toolbar {
     top: 1rem;
     width: calc(100% - 2.4rem);
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
     gap: 0.5rem;
+    transform: translateX(-50%);
   }
 
   .archive-detail__card,
