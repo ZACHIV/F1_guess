@@ -24,10 +24,10 @@ import ResultReviewPage from './components/ResultReviewPage.jsx';
 import WaveformHUD from './components/WaveformHUD.jsx';
 import TimerRing from './components/TimerRing.jsx';
 import InteractionDock from './components/InteractionDock.jsx';
+import LocalePicker from './components/LocalePicker.jsx';
 import {
   detectInitialLocale,
   getLocalizedAnswerLabel,
-  getLanguageBadge,
   t
 } from './i18n.js';
 import { getSynchronizedElapsedMs } from './sync-utils.js';
@@ -609,11 +609,11 @@ export default function App({ initialLibrary }) {
           dimensions={TRACK_DIMENSIONS}
           locale={locale}
           marker={marker}
+          onLocaleChange={setLocale}
           onNextChallenge={handleNextChallenge}
           onMuteAnthem={muteAnthemCue}
           onReplayAudio={handleReplayReview}
           onRetry={handleRetry}
-          onToggleLocale={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
           result={result}
           telemetryPath={telemetryPath}
         />
@@ -635,18 +635,12 @@ export default function App({ initialLibrary }) {
       />
 
       <div className="duel-stage__language-switch">
-        <button
-          className="rounded-full border border-white/20 bg-black/24 px-4 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36"
-          onClick={() => setLocale((current) => current === 'zh' ? 'en' : 'zh')}
-          type="button"
-        >
-          {getLanguageBadge(locale)}
-        </button>
+        <LocalePicker locale={locale} onChange={setLocale} />
       </div>
 
       <div className="relative flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
         <section className="duel-stage__hero pointer-events-none px-1">
-          <h1 className="duel-stage__hero-title hero-display">Can You Beat Max?</h1>
+          <h1 className="duel-stage__hero-title hero-display">{t(locale, 'heroTitle')}</h1>
         </section>
 
         <div className="duel-stage__control-cluster">

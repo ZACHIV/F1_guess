@@ -1,13 +1,11 @@
 import { formatScoreTime } from '../game-config.js';
-import {
-  getLanguageBadge,
-  t
-} from '../i18n.js';
+import { t } from '../i18n.js';
 import {
   getCountryNameByLocale,
   getTrackNameByLocale
 } from '../track-locales.js';
 import { getTrackNote } from '../track-notes.js';
+import LocalePicker from './LocalePicker.jsx';
 import TrackHUD from './TrackHUD.jsx';
 
 export default function ResultReviewPage({
@@ -18,9 +16,9 @@ export default function ResultReviewPage({
   marker,
   onNextChallenge,
   onMuteAnthem,
+  onLocaleChange,
   onReplayAudio,
   onRetry,
-  onToggleLocale,
   locale,
   result,
   telemetryPath
@@ -42,13 +40,7 @@ export default function ResultReviewPage({
     >
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-6 sm:px-8 lg:px-10">
         <div className="flex justify-end">
-          <button
-            className="rounded-full border border-white/20 bg-black/24 px-4 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36"
-            onClick={onToggleLocale}
-            type="button"
-          >
-            {getLanguageBadge(locale)}
-          </button>
+          <LocalePicker locale={locale} onChange={onLocaleChange} />
         </div>
         <header className="result-review__hero rounded-[2rem] border border-white/10 bg-white/[0.04] px-6 py-6 backdrop-blur-xl">
           <p className="text-[10px] uppercase tracking-[0.28em] text-white/52">{t(locale, 'resultEyebrow')}</p>

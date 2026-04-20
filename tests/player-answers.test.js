@@ -58,6 +58,14 @@ describe('isChallengeAnswerCorrect', () => {
     expect(isChallengeAnswerCorrect(challenge, '维伦纽夫')).toBe(true);
   });
 
+  it('accepts traditional chinese localized names', () => {
+    expect(isChallengeAnswerCorrect({
+      trackName: 'Monza',
+      trackCountry: 'Italy',
+      answerAliases: []
+    }, '義大利')).toBe(true);
+  });
+
   it('rejects unrelated answers', () => {
     expect(isChallengeAnswerCorrect(challenge, 'Spa')).toBe(false);
   });

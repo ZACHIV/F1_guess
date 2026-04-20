@@ -2,6 +2,7 @@ import {
   getCountryNameByLocale,
   getTrackNameByLocale
 } from '../track-locales.js';
+import { t } from '../i18n.js';
 
 export default function TrackHUD({
   challenge,
@@ -12,11 +13,9 @@ export default function TrackHUD({
 }) {
   const trackName = getTrackNameByLocale(challenge.trackName, locale);
   const countryName = getCountryNameByLocale(challenge.trackCountry, locale);
-  const headerLabel = locale === 'zh' ? '赛道轨迹' : 'debrief trace';
-  const description = locale === 'zh'
-    ? '只有在对决结束后才会揭晓。可以结合音频回放观察弯角几何。'
-    : 'Revealed only after the duel ends. Scrub the clip and read the corner geometry.';
-  const unknownVenue = locale === 'zh' ? '未知赛道' : 'Unknown venue';
+  const headerLabel = t(locale, 'trackDebriefTrace');
+  const description = t(locale, 'trackDebriefDescription');
+  const unknownVenue = t(locale, 'unknownVenue');
 
   return (
     <section

@@ -20,9 +20,9 @@ describe('ResultReviewPage', () => {
         locale="en"
         onNextChallenge={() => {}}
         onMuteAnthem={() => {}}
+        onLocaleChange={() => {}}
         onReplayAudio={() => {}}
         onRetry={() => {}}
-        onToggleLocale={() => {}}
         result={{
           outcome: 'lose',
           headline: 'Max still called Monza first.',

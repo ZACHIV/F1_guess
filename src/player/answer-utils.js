@@ -1,6 +1,8 @@
 import {
-  COUNTRY_NAME_ZH,
-  TRACK_NAME_ZH
+  getAllLocalizedCountryNames,
+  getAllLocalizedTrackNames,
+  getCountryNameByLocale,
+  getTrackNameByLocale
 } from './track-locales.js';
 
 function unique(values) {
@@ -43,14 +45,18 @@ export function normalizeAnswer(value) {
 export function getAcceptedAnswers(challenge) {
   const trackName = challenge?.trackName || '';
   const countryName = challenge?.trackCountry || '';
-  const trackZh = TRACK_NAME_ZH[trackName];
-  const countryZh = COUNTRY_NAME_ZH[countryName];
+  const trackZhHans = getTrackNameByLocale(trackName, 'zh-Hans');
+  const trackZhHant = getTrackNameByLocale(trackName, 'zh-Hant');
+  const countryZhHans = getCountryNameByLocale(countryName, 'zh-Hans');
+  const countryZhHant = getCountryNameByLocale(countryName, 'zh-Hant');
 
   return unique([
-    trackName,
-    countryName,
-    ...buildChineseVariants(trackZh),
-    ...buildChineseVariants(countryZh),
+    ...getAllLocalizedTrackNames(trackName),
+    ...getAllLocalizedCountryNames(countryName),
+    ...buildChineseVariants(trackZhHans),
+    ...buildChineseVariants(trackZhHant),
+    ...buildChineseVariants(countryZhHans),
+    ...buildChineseVariants(countryZhHant),
     ...(Array.isArray(challenge?.zhAliases) ? challenge.zhAliases.flatMap(buildChineseVariants) : []),
     ...(Array.isArray(challenge?.answerAliases) ? challenge.answerAliases : [])
   ].map(normalizeAnswer).filter(Boolean));
