@@ -9,6 +9,7 @@
     "dev:api": "node server/index.mjs",
     "install:deps": "bash scripts/install-deps.sh",
     "setup:f1db": "node scripts/setup-f1db.mjs",
+    "build:archive-audio": "python3 scripts/build-archive-audio-manifest.py",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest"

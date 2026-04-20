@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ARCHIVE_TRACKS } from './archive-metadata.js';
+import { useArchiveAmbientLoop } from './use-archive-ambient-loop.js';
 
 const MOBILE_BREAKPOINT = 720;
 
@@ -46,6 +47,7 @@ export default function ArchiveApp() {
   const totalSpan = layout.span * ARCHIVE_TRACKS.length;
   const selectedIndex = ARCHIVE_TRACKS.findIndex((track) => track.id === selectedTrackId);
   const selectedTrack = selectedIndex >= 0 ? ARCHIVE_TRACKS[selectedIndex] : null;
+  const ambientLoop = useArchiveAmbientLoop(selectedTrack);
 
   useEffect(() => {
     if (!stageRef.current) {
@@ -283,6 +285,25 @@ export default function ArchiveApp() {
                 <p className="archive-detail__counter">
                   {selectedTrack.issue} / {String(ARCHIVE_TRACKS.length).padStart(2, '0')}
                 </p>
+                <button
+                  type="button"
+                  className="archive-detail__sound"
+                  aria-label={ambientLoop.isEnabled ? 'Mute ambience' : 'Play ambience'}
+                  onClick={() => {
+                    if (ambientLoop.isBlocked) {
+                      ambientLoop.retry();
+                      return;
+                    }
+
+                    ambientLoop.setIsEnabled((current) => !current);
+                  }}
+                >
+                  {ambientLoop.isBlocked
+                    ? 'Tap for sound'
+                    : ambientLoop.isEnabled
+                      ? 'Ambience on'
+                      : 'Ambience off'}
+                </button>
                 <button
                   type="button"
                   className="archive-detail__nav archive-detail__nav--next"

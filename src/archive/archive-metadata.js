@@ -1,4 +1,5 @@
 import challengeLibrary from '../data/challenge-library.json';
+import archiveAudioManifest from './archive-audio-manifest.json';
 
 const ARCHIVE_PALETTES = [
   ['#eef0ea', '#bdccb6', '#fbfcf9'],
@@ -60,6 +61,9 @@ export const ARCHIVE_TRACKS = challengeLibrary
       firstGrandPrix: detail.firstGrandPrix ?? 'Archive pending',
       curatorNote: detail.curatorNote ?? 'This circuit sits in the archive as part of the 2025 qualifying collection.',
       asset: challenge.trackSvgSrc,
-      colors: ARCHIVE_PALETTES[index % ARCHIVE_PALETTES.length]
+      colors: ARCHIVE_PALETTES[index % ARCHIVE_PALETTES.length],
+      audioSrc: challenge.audioSrc,
+      ambientEndMs: archiveAudioManifest[challenge.id]?.ambientEndMs ?? Math.max((challenge.clipDurationMs ?? 0) - 3000, 0),
+      crossfadeMs: archiveAudioManifest[challenge.id]?.crossfadeMs ?? 3200
     };
   });

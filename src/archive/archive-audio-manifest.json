@@ -1,0 +1,146 @@
+{
+  "australia-quali-lando-norris-2025": {
+    "ambientEndMs": 99196,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 102696,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "china-quali-oscar-piastri-2025": {
+    "ambientEndMs": 104004,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 120504,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "japan-quali-max-verstappen-2025": {
+    "ambientEndMs": 100404,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 116904,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "bahrain-quali-oscar-piastri-2025": {
+    "ambientEndMs": 117052,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 120552,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "saudi-arabia-quali-max-verstappen-2025": {
+    "ambientEndMs": 104940,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 121440,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "miami-quali-max-verstappen-2025": {
+    "ambientEndMs": 114100,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 117600,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "imola-quali-oscar-piastri-2025": {
+    "ambientEndMs": 104788,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 108288,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "monaco-quali-lando-norris-2025": {
+    "ambientEndMs": 81420,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 97920,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "spain-quali-oscar-piastri-2025": {
+    "ambientEndMs": 98044,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 101544,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "canada-quali-george-russell-2025": {
+    "ambientEndMs": 97348,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 100848,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "austria-quali-lando-norris-2025": {
+    "ambientEndMs": 92164,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 95664,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "great-britain-quali-max-verstappen-2025": {
+    "ambientEndMs": 111484,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 114984,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "belgium-quali-lando-norris-2025": {
+    "ambientEndMs": 123748,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 127248,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "hungary-quali-charles-leclerc-2025": {
+    "ambientEndMs": 105436,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 108936,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "netherlands-quali-oscar-piastri-2025": {
+    "ambientEndMs": 90756,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 107256,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "italy-quali-max-verstappen-2025": {
+    "ambientEndMs": 99444,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 115944,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "azerbaijan-quali-max-verstappen-2025": {
+    "ambientEndMs": 117700,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 121200,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "singapore-quali-george-russell-2025": {
+    "ambientEndMs": 102252,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 118752,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "united-states-quali-max-verstappen-2025": {
+    "ambientEndMs": 106500,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 123000,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "mexico-quali-lando-norris-2025": {
+    "ambientEndMs": 89652,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 106152,
+    "speechDetectionMethod": "vocal_tail_rms"
+  },
+  "brazil-quali-lando-norris-2025": {
+    "ambientEndMs": 97396,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 100896,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "las-vegas-quali-lando-norris-2025": {
+    "ambientEndMs": 136900,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 140400,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "qatar-quali-oscar-piastri-2025": {
+    "ambientEndMs": 107668,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 111168,
+    "speechDetectionMethod": "fallback_trim"
+  },
+  "abu-dhabi-quali-max-verstappen-2025": {
+    "ambientEndMs": 110596,
+    "crossfadeMs": 3200,
+    "sourceDurationMs": 114096,
+    "speechDetectionMethod": "fallback_trim"
+  }
+}

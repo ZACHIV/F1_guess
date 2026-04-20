@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ArchiveApp from '../src/archive/ArchiveApp.jsx';
 
@@ -21,11 +21,28 @@ describe('ArchiveApp', () => {
   const originalResizeObserver = global.ResizeObserver;
   const originalRequestAnimationFrame = global.requestAnimationFrame;
   const originalCancelAnimationFrame = global.cancelAnimationFrame;
+  const originalAudio = global.Audio;
+  let audioInstances = [];
 
   beforeEach(() => {
     global.ResizeObserver = MockResizeObserver;
     global.requestAnimationFrame = vi.fn(() => 1);
     global.cancelAnimationFrame = vi.fn();
+    audioInstances = [];
+    global.Audio = vi.fn((src) => {
+      const audio = {
+        src,
+        preload: 'auto',
+        loop: false,
+        currentTime: 0,
+        volume: 1,
+        __baseVolume: 1,
+        play: vi.fn().mockResolvedValue(undefined),
+        pause: vi.fn()
+      };
+      audioInstances.push(audio);
+      return audio;
+    });
   });
 
   afterEach(() => {
@@ -33,6 +50,7 @@ describe('ArchiveApp', () => {
     global.ResizeObserver = originalResizeObserver;
     global.requestAnimationFrame = originalRequestAnimationFrame;
     global.cancelAnimationFrame = originalCancelAnimationFrame;
+    global.Audio = originalAudio;
   });
 
   function openMonacoDossier() {
@@ -70,6 +88,22 @@ describe('ArchiveApp', () => {
     expect(screen.queryByRole('dialog', { name: /monte carlo archive detail/i })).not.toBeInTheDocument();
   });
 
+  it('starts ambient playback for the selected track and stops it on close', async () => {
+    render(<ArchiveApp />);
+
+    openMonacoDossier();
+
+    await waitFor(() => {
+      expect(global.Audio).toHaveBeenCalledWith('/audio/monaco-quali-lando-norris-2025.mp3');
+    });
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(audioInstances[0].pause).toHaveBeenCalled();
+    });
+  });
+
   it('supports next and previous browsing controls plus keyboard navigation in detail mode', () => {
     render(<ArchiveApp />);
 
@@ -86,6 +120,18 @@ describe('ArchiveApp', () => {
 
     expect(screen.getByRole('dialog', { name: /monte carlo archive detail/i })).toBeInTheDocument();
     expect(screen.getByText('08 / 24')).toBeInTheDocument();
+  });
+
+  it('switches the ambient source when browsing to the next circuit', async () => {
+    render(<ArchiveApp />);
+
+    openMonacoDossier();
+    fireEvent.click(screen.getByRole('button', { name: /next circuit/i }));
+
+    await waitFor(() => {
+      expect(global.Audio).toHaveBeenCalledWith('/audio/monaco-quali-lando-norris-2025.mp3');
+      expect(global.Audio).toHaveBeenCalledWith('/audio/spain-quali-oscar-piastri-2025.mp3');
+    });
   });
 
   it('closes the detail view when the surrounding blank layout area is clicked', () => {

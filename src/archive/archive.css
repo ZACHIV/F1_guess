@@ -338,6 +338,7 @@ button {
 }
 
 .archive-detail__nav,
+.archive-detail__sound,
 .archive-detail__close,
 .archive-detail__counter {
   font-family: 'IBM Plex Mono', monospace;
@@ -354,7 +355,16 @@ button {
   transition: color 180ms ease, transform 180ms ease;
 }
 
+.archive-detail__sound {
+  border: 0;
+  background: transparent;
+  color: rgba(22, 22, 22, 0.64);
+  cursor: pointer;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
 .archive-detail__nav:hover,
+.archive-detail__sound:hover,
 .archive-detail__close:hover {
   color: rgba(22, 22, 22, 0.8);
   transform: translateY(-1px);
