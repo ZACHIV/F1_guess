@@ -8,7 +8,7 @@ import {
 const MESSAGES = {
   en: {
     noPlayableChallenge: 'No playable challenge found.',
-    audioArmingError: 'Audio is still arming. Give the waveform a second, then start again.',
+    audioArmingError: 'Audio is still loading. Give it a second, then start again.',
     playbackBlockedError: 'Audio playback was blocked. Interact again to continue the duel.',
     loadChallengeError: 'Failed to load challenge.',
     wrongCircuitFeedback: 'Wrong circuit. Keep listening for the braking rhythm and straight-line signature.',
@@ -128,7 +128,7 @@ const MESSAGES = {
   },
   fr: {
     noPlayableChallenge: 'Aucun défi jouable trouvé.',
-    audioArmingError: 'L’audio se prépare encore. Attendez une seconde puis relancez.',
+    audioArmingError: 'L’audio est encore en cours de chargement. Attendez une seconde puis relancez.',
     playbackBlockedError: 'La lecture audio a été bloquée. Interagissez de nouveau pour continuer.',
     loadChallengeError: 'Impossible de charger le défi.',
     wrongCircuitFeedback: 'Mauvais circuit. Écoutez encore le rythme de freinage et la signature des lignes droites.',
@@ -168,7 +168,7 @@ const MESSAGES = {
   },
   es: {
     noPlayableChallenge: 'No se encontró ningún desafío jugable.',
-    audioArmingError: 'El audio aún se está preparando. Espera un segundo y vuelve a empezar.',
+    audioArmingError: 'El audio aún se está cargando. Espera un segundo y vuelve a empezar.',
     playbackBlockedError: 'El navegador bloqueó la reproducción. Interactúa otra vez para continuar.',
     loadChallengeError: 'No se pudo cargar el desafío.',
     wrongCircuitFeedback: 'Circuito incorrecto. Sigue escuchando el ritmo de frenada y la firma de la recta.',
@@ -208,7 +208,7 @@ const MESSAGES = {
   },
   it: {
     noPlayableChallenge: 'Nessuna sfida giocabile trovata.',
-    audioArmingError: 'L’audio si sta ancora preparando. Attendi un secondo e riprova.',
+    audioArmingError: 'L’audio si sta ancora caricando. Attendi un secondo e riprova.',
     playbackBlockedError: 'La riproduzione audio è stata bloccata. Interagisci di nuovo per continuare il duello.',
     loadChallengeError: 'Impossibile caricare la sfida.',
     wrongCircuitFeedback: 'Circuito sbagliato. Continua ad ascoltare il ritmo di frenata e la firma del rettilineo.',
@@ -248,7 +248,7 @@ const MESSAGES = {
   },
   ja: {
     noPlayableChallenge: 'プレイ可能なチャレンジが見つかりません。',
-    audioArmingError: '音声の準備中です。少し待ってからもう一度開始してください。',
+    audioArmingError: '音声はまだ読み込み中です。少し待ってからもう一度開始してください。',
     playbackBlockedError: '音声再生がブラウザにブロックされました。もう一度操作して続行してください。',
     loadChallengeError: 'チャレンジの読み込みに失敗しました。',
     wrongCircuitFeedback: '不正解です。ブレーキングのリズムとストレートの特徴をもう一度聞いてください。',
@@ -288,7 +288,7 @@ const MESSAGES = {
   },
   de: {
     noPlayableChallenge: 'Keine spielbare Herausforderung gefunden.',
-    audioArmingError: 'Das Audio wird noch vorbereitet. Warte kurz und starte dann erneut.',
+    audioArmingError: 'Das Audio wird noch geladen. Warte kurz und starte dann erneut.',
     playbackBlockedError: 'Die Audiowiedergabe wurde blockiert. Interagiere erneut, um weiterzumachen.',
     loadChallengeError: 'Die Herausforderung konnte nicht geladen werden.',
     wrongCircuitFeedback: 'Falsche Strecke. Hör weiter auf den Bremspunkt-Rhythmus und die Gerade.',
@@ -328,7 +328,7 @@ const MESSAGES = {
   },
   ko: {
     noPlayableChallenge: '플레이 가능한 챌린지를 찾지 못했습니다.',
-    audioArmingError: '오디오가 아직 준비 중입니다. 잠시 후 다시 시작하세요.',
+    audioArmingError: '오디오가 아직 로드 중입니다. 잠시 후 다시 시작하세요.',
     playbackBlockedError: '오디오 재생이 브라우저에 의해 차단되었습니다. 다시 상호작용해 계속하세요.',
     loadChallengeError: '챌린지를 불러오지 못했습니다.',
     wrongCircuitFeedback: '틀렸습니다. 브레이킹 리듬과 직선 구간의 특징을 다시 들어보세요.',

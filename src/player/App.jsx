@@ -19,9 +19,9 @@ import {
   buildResultNarrative,
   pickResultVariant
 } from './result-copy.js';
+import AudioPlayer from './components/AudioPlayer.jsx';
 import PosterStage from './components/PosterStage.jsx';
 import ResultReviewPage from './components/ResultReviewPage.jsx';
-import WaveformHUD from './components/WaveformHUD.jsx';
 import TimerRing from './components/TimerRing.jsx';
 import InteractionDock from './components/InteractionDock.jsx';
 import LocalePicker from './components/LocalePicker.jsx';
@@ -220,8 +220,7 @@ export default function App({ initialLibrary }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [hudState, setHudState] = useState(EMPTY_HUD);
   const [marker, setMarker] = useState({ x: 180, y: 125 });
-  const [liveWaveform, setLiveWaveform] = useState(null);
-  const [reviewWaveform, setReviewWaveform] = useState(null);
+  const [audioPlayer, setAudioPlayer] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [canResume, setCanResume] = useState(false);
   const [answerValue, setAnswerValue] = useState('');
@@ -422,29 +421,17 @@ export default function App({ initialLibrary }) {
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
   const displayElapsedMs = result?.playerTimeMs ?? sessionElapsedMs;
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
-  const activeWaveform = result ? reviewWaveform : liveWaveform;
 
   const playFromStart = useEffectEvent(async () => {
-    if (!activeWaveform) {
+    if (!audioPlayer) {
       setError(t(locale, 'audioArmingError'));
       return false;
     }
 
     try {
-      if (typeof activeWaveform.stop === 'function') {
-        activeWaveform.stop();
-      } else {
-        activeWaveform.pause?.();
-      }
-
-      if (typeof activeWaveform.setTime === 'function') {
-        activeWaveform.setTime(0);
-      } else if (typeof activeWaveform.seekTo === 'function') {
-        activeWaveform.seekTo(0);
-      }
-
+      audioPlayer.currentTime = 0;
       setCurrentTime(0);
-      await activeWaveform.play();
+      await audioPlayer.play();
       setCanResume(true);
       return true;
     } catch {
@@ -454,12 +441,12 @@ export default function App({ initialLibrary }) {
   });
 
   const resumePlayback = useEffectEvent(async () => {
-    if (!activeWaveform) {
+    if (!audioPlayer) {
       return false;
     }
 
     try {
-      await activeWaveform.play();
+      await audioPlayer.play();
       setCanResume(true);
       return true;
     } catch {
@@ -469,7 +456,7 @@ export default function App({ initialLibrary }) {
   });
 
   const finishRound = useEffectEvent((outcome, playerTimeMs) => {
-    activeWaveform?.pause?.();
+    audioPlayer?.pause();
     setIsPlaying(false);
     setCanResume(false);
     setFeedback(null);
@@ -504,12 +491,12 @@ export default function App({ initialLibrary }) {
   }
 
   async function handleTogglePlayback() {
-    if (!activeWaveform) {
+    if (!audioPlayer) {
       return;
     }
 
     if (runState === 'live' && isPlaying) {
-      activeWaveform.pause?.();
+      audioPlayer.pause();
       return;
     }
 
@@ -591,19 +578,18 @@ export default function App({ initialLibrary }) {
   if (result) {
     return (
       <>
-        <WaveformHUD
+        <AudioPlayer
           audioSrc={challenge.audioSrc}
-          hidden
           onFinish={() => {
             setIsPlaying(false);
             setCanResume(false);
           }}
           onPlayStateChange={setIsPlaying}
-          onReady={setReviewWaveform}
+          onReady={setAudioPlayer}
           onTimeUpdate={setCurrentTime}
         />
         <ResultReviewPage
-          canReplay={Boolean(reviewWaveform)}
+          canReplay={Boolean(audioPlayer)}
           canMuteAnthem={canMuteAnthem && !anthemMuted}
           challenge={challenge}
           dimensions={TRACK_DIMENSIONS}
@@ -622,65 +608,66 @@ export default function App({ initialLibrary }) {
   }
 
   return (
-    <PosterStage challenge={challenge} result={result} runState={runState}>
-      <WaveformHUD
+    <>
+      <AudioPlayer
         audioSrc={challenge.audioSrc}
         onFinish={() => {
           setIsPlaying(false);
           setCanResume(false);
         }}
         onPlayStateChange={setIsPlaying}
-        onReady={setLiveWaveform}
+        onReady={setAudioPlayer}
         onTimeUpdate={setCurrentTime}
       />
-
-      <div className="duel-stage__language-switch">
-        <LocalePicker locale={locale} onChange={setLocale} />
-      </div>
-
-      <div className="relative flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
-        <section className="duel-stage__hero pointer-events-none px-1">
-          <h1 className="duel-stage__hero-title hero-display">{t(locale, 'heroTitle')}</h1>
-        </section>
-
-        <div className="duel-stage__control-cluster">
-          <InteractionDock
-            answerValue={answerValue}
-            canStart={Boolean(liveWaveform)}
-            canResume={canResume}
-            isPlaying={isPlaying}
-            onAnswerChange={(value) => {
-              setAnswerValue(value);
-              if (submitState === 'error') {
-                setSubmitState('idle');
-              }
-            }}
-            onReplay={handleReplayLive}
-            onAnswerSubmit={handleAnswerSubmit}
-            onStart={handleStart}
-            onSurrender={handleSurrender}
-            onTogglePlayback={handleTogglePlayback}
-            runState={runState}
-            submitState={submitState}
-            locale={locale}
-            timer={(
-              <TimerRing
-                benchmarkMs={currentBenchmarkMs}
-                currentTime={displayElapsedMs}
-                durationMs={MAX_GUESS_MS}
-                result={result}
-                runState={runState}
-              />
-            )}
-          />
+      <PosterStage challenge={challenge} result={result} runState={runState}>
+        <div className="duel-stage__language-switch">
+          <LocalePicker locale={locale} onChange={setLocale} />
         </div>
-      </div>
 
-      {error ? (
-        <div className="pointer-events-none absolute inset-x-6 top-28 z-20 rounded-full border border-white/20 bg-black/28 px-4 py-2 text-center text-xs text-white/90 backdrop-blur-xl">
-          {error}
+        <div className="relative flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
+          <section className="duel-stage__hero duel-stage__hero--anchored pointer-events-none px-1">
+            <h1 className="duel-stage__hero-title hero-display">{t(locale, 'heroTitle')}</h1>
+          </section>
+
+          <div className="duel-stage__control-cluster">
+            <InteractionDock
+              answerValue={answerValue}
+              canStart={Boolean(audioPlayer)}
+              canResume={canResume}
+              isPlaying={isPlaying}
+              onAnswerChange={(value) => {
+                setAnswerValue(value);
+                if (submitState === 'error') {
+                  setSubmitState('idle');
+                }
+              }}
+              onReplay={handleReplayLive}
+              onAnswerSubmit={handleAnswerSubmit}
+              onStart={handleStart}
+              onSurrender={handleSurrender}
+              onTogglePlayback={handleTogglePlayback}
+              runState={runState}
+              submitState={submitState}
+              locale={locale}
+              timer={(
+                <TimerRing
+                  benchmarkMs={currentBenchmarkMs}
+                  currentTime={displayElapsedMs}
+                  durationMs={MAX_GUESS_MS}
+                  result={result}
+                  runState={runState}
+                />
+              )}
+            />
+          </div>
         </div>
-      ) : null}
-    </PosterStage>
+
+        {error ? (
+          <div className="pointer-events-none absolute inset-x-6 top-28 z-20 rounded-full border border-white/20 bg-black/28 px-4 py-2 text-center text-xs text-white/90 backdrop-blur-xl">
+            {error}
+          </div>
+        ) : null}
+      </PosterStage>
+    </>
   );
 }
