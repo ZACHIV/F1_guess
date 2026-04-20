@@ -35,6 +35,31 @@ import {
 
 const TRACK_DIMENSIONS = { width: 360, height: 250, padding: 26 };
 const EMPTY_HUD = { speed: '-', n_gear: '-', throttle: '-', rpm: '-' };
+const MARKETING_SNAPSHOT_PRESETS = {
+  live: {
+    challengeId: 'italy-quali-max-verstappen-2025',
+    locale: 'en',
+    runState: 'live',
+    currentTimeMs: 16_840,
+    answerValue: 'Monza',
+    canResume: true,
+    isPlaying: true
+  },
+  win: {
+    challengeId: 'italy-quali-max-verstappen-2025',
+    locale: 'en',
+    runState: 'result',
+    resultOutcome: 'win',
+    playerTimeMs: 18_440
+  },
+  lose: {
+    challengeId: 'italy-quali-max-verstappen-2025',
+    locale: 'en',
+    runState: 'result',
+    resultOutcome: 'lose',
+    playerTimeMs: 26_980
+  }
+};
 
 function pickRandomChallenge(challenges, excludeId = '') {
   if (!challenges.length) {
@@ -152,12 +177,29 @@ function buildResult(challenge, outcome, playerTimeMs, locale) {
   };
 }
 
+function getMarketingSnapshotConfig() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const snapshotKey = new URLSearchParams(window.location.search).get('snapshot');
+  if (!snapshotKey) {
+    return null;
+  }
+
+  return MARKETING_SNAPSHOT_PRESETS[snapshotKey] ?? null;
+}
+
 export default function App({ initialLibrary }) {
+  const marketingSnapshot = useMemo(() => getMarketingSnapshotConfig(), []);
+  const marketingSnapshotAppliedRef = useRef(false);
   const resultAudioCleanupRef = useRef(() => {});
   const [locale, setLocale] = useState(detectInitialLocale);
   const [library, setLibrary] = useState(() => getPlayableChallenges(initialLibrary ?? fallbackChallenges));
   const [selectedChallengeId, setSelectedChallengeId] = useState(() =>
-    pickRandomChallenge(getPlayableChallenges(initialLibrary ?? fallbackChallenges))?.id ?? ''
+    marketingSnapshot?.challengeId
+      ?? pickRandomChallenge(getPlayableChallenges(initialLibrary ?? fallbackChallenges))?.id
+      ?? ''
   );
   const [telemetryModel, setTelemetryModel] = useState(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -328,6 +370,38 @@ export default function App({ initialLibrary }) {
       window.clearTimeout(resetTimer);
     };
   }, [submitState]);
+
+  useEffect(() => {
+    if (!marketingSnapshot || !challenge || !telemetryModel || marketingSnapshotAppliedRef.current) {
+      return;
+    }
+
+    marketingSnapshotAppliedRef.current = true;
+    setLocale(marketingSnapshot.locale ?? 'en');
+    setError('');
+    setFeedback(null);
+    setSubmitState('idle');
+    setAnswerValue(marketingSnapshot.answerValue ?? '');
+    setCurrentTime(marketingSnapshot.currentTimeMs ?? 0);
+    setCanResume(Boolean(marketingSnapshot.canResume));
+    setIsPlaying(Boolean(marketingSnapshot.isPlaying));
+
+    if (marketingSnapshot.resultOutcome) {
+      setRunState('result');
+      setResult(
+        buildResult(
+          challenge,
+          marketingSnapshot.resultOutcome,
+          marketingSnapshot.playerTimeMs ?? 0,
+          marketingSnapshot.locale ?? 'en'
+        )
+      );
+      return;
+    }
+
+    setResult(null);
+    setRunState(marketingSnapshot.runState ?? 'idle');
+  }, [challenge, marketingSnapshot, telemetryModel]);
 
   const currentBenchmarkMs = challenge?.benchmarkMs ?? 0;
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
