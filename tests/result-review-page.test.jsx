@@ -44,5 +44,7 @@ describe('ResultReviewPage', () => {
     expect(markup).toContain('Mute Anthem');
     expect(markup).toContain('Monza');
     expect(markup).toContain('Recorded benchmark');
+    expect(markup).toContain('Circuit Note');
+    expect(markup).toContain('Temple of Speed');
   });
 });

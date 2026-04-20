@@ -7,6 +7,7 @@ import {
   getCountryNameByLocale,
   getTrackNameByLocale
 } from '../track-locales.js';
+import { getTrackNote } from '../track-notes.js';
 import TrackHUD from './TrackHUD.jsx';
 
 export default function ResultReviewPage({
@@ -29,6 +30,7 @@ export default function ResultReviewPage({
   const deltaLabel = result.localized?.deltaLabel ?? result.deltaLabel;
   const trackName = getTrackNameByLocale(challenge.trackName, locale);
   const countryName = getCountryNameByLocale(challenge.trackCountry, locale);
+  const trackNote = getTrackNote(challenge.trackName, locale);
   const benchmarkSourceLabel = challenge.benchmarkSource === 'recorded'
     ? t(locale, 'benchmarkSourceRecorded')
     : t(locale, 'benchmarkSourceEstimated');
@@ -126,6 +128,12 @@ export default function ResultReviewPage({
                 <RevealRow label={t(locale, 'country')} value={countryName} />
                 <RevealRow label={t(locale, 'driver')} value={`${challenge.driverName} #${challenge.driverNumber || '00'}`} />
               </div>
+              {trackNote ? (
+                <div className="mt-4 rounded-[1.2rem] border border-white/8 bg-black/12 px-4 py-4">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-white/42">{t(locale, 'trackNote')}</p>
+                  <p className="mt-2 text-sm leading-6 text-white/74">{trackNote}</p>
+                </div>
+              ) : null}
             </section>
           </aside>
         </section>

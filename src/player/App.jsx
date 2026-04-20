@@ -15,6 +15,10 @@ import {
   formatScoreTime,
   getDuelChallenge
 } from './game-config.js';
+import {
+  buildResultNarrative,
+  pickResultVariant
+} from './result-copy.js';
 import PosterStage from './components/PosterStage.jsx';
 import ResultReviewPage from './components/ResultReviewPage.jsx';
 import WaveformHUD from './components/WaveformHUD.jsx';
@@ -113,24 +117,32 @@ async function loadChallengeLibrary() {
   }
 }
 
-function buildResult(challenge, outcome, playerTimeMs, locale) {
+function buildResult(challenge, outcome, playerTimeMs, locale, variantId = pickResultVariant(outcome)) {
   const benchmarkMs = challenge?.benchmarkMs ?? 0;
   const deltaMs = Math.abs(playerTimeMs - benchmarkMs);
   const answerLabel = getLocalizedAnswerLabel(challenge, locale);
   const localizedTrackName = answerLabel.split(' · ')[0];
+  const narrative = buildResultNarrative(
+    locale,
+    outcome,
+    {
+      track: localizedTrackName,
+      answer: answerLabel,
+      delta: formatScoreTime(deltaMs)
+    },
+    variantId
+  );
 
   if (outcome === 'win') {
     return {
       outcome,
       playerTimeMs,
       benchmarkMs,
+      variantId: narrative.variantId,
       locale,
       localized: {
-        headline: t(locale, 'winHeadline', { track: localizedTrackName }),
-        copy: t(locale, 'winCopy', {
-          answer: answerLabel,
-          delta: formatScoreTime(deltaMs)
-        }),
+        headline: narrative.headline,
+        copy: narrative.copy,
         deltaLabel: t(locale, 'deltaFaster', { delta: formatScoreTime(deltaMs) })
       }
     };
@@ -141,10 +153,11 @@ function buildResult(challenge, outcome, playerTimeMs, locale) {
       outcome,
       playerTimeMs,
       benchmarkMs,
+      variantId: narrative.variantId,
       locale,
       localized: {
-        headline: t(locale, 'timeoutHeadline'),
-        copy: t(locale, 'timeoutCopy', { answer: answerLabel }),
+        headline: narrative.headline,
+        copy: narrative.copy,
         deltaLabel: t(locale, 'deltaBehind', { delta: formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0)) })
       }
     };
@@ -155,10 +168,11 @@ function buildResult(challenge, outcome, playerTimeMs, locale) {
       outcome,
       playerTimeMs,
       benchmarkMs,
+      variantId: narrative.variantId,
       locale,
       localized: {
-        headline: t(locale, 'forfeitHeadline', { track: localizedTrackName }),
-        copy: t(locale, 'forfeitCopy', { answer: answerLabel }),
+        headline: narrative.headline,
+        copy: narrative.copy,
         deltaLabel: t(locale, 'deltaBehind', { delta: formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0)) })
       }
     };
@@ -168,10 +182,11 @@ function buildResult(challenge, outcome, playerTimeMs, locale) {
     outcome,
     playerTimeMs,
     benchmarkMs,
+    variantId: narrative.variantId,
     locale,
     localized: {
-      headline: t(locale, 'loseHeadline', { track: localizedTrackName }),
-      copy: t(locale, 'loseCopy', { answer: answerLabel, delta: formatScoreTime(deltaMs) }),
+      headline: narrative.headline,
+      copy: narrative.copy,
       deltaLabel: t(locale, 'deltaSlower', { delta: formatScoreTime(deltaMs) })
     }
   };
@@ -328,7 +343,7 @@ export default function App({ initialLibrary }) {
       return;
     }
 
-    setResult(buildResult(challenge, result.outcome, result.playerTimeMs, locale));
+    setResult(buildResult(challenge, result.outcome, result.playerTimeMs, locale, result.variantId));
   }, [challenge, locale, result]);
 
   useEffect(() => {
