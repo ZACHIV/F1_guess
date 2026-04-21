@@ -115,6 +115,15 @@ select {
   text-align: center;
 }
 
+.duel-stage__hero--anchored {
+  position: absolute;
+  top: calc(2.9rem + 6px);
+  left: 0;
+  right: 0;
+  margin-top: 0;
+  padding-inline: 1.2rem;
+}
+
 .duel-stage__hero-title {
   margin: 0;
   font-size: clamp(2.7rem, 9vw, 4.4rem);
@@ -141,71 +150,6 @@ select {
   background-image:
     radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 0.7px, transparent 0);
   background-size: 16px 16px;
-}
-
-.poster-waveform {
-  position: relative;
-  z-index: 3;
-}
-
-.waveform-hud--hidden {
-  position: absolute;
-  left: -9999px;
-  top: -9999px;
-  width: 240px;
-  height: 40px;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.poster-waveform__glow {
-  position: absolute;
-  left: 50%;
-  top: 78px;
-  width: 68%;
-  height: 28px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  filter: blur(20px);
-  opacity: 0.34;
-}
-
-.poster-waveform__shell {
-  position: relative;
-  width: min(100%, 352px);
-  margin: 0 auto;
-  min-height: 82px;
-}
-
-.poster-waveform__fallback-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  transform: translateY(-50%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
-  opacity: 0.5;
-}
-
-.poster-waveform__oscilloscope {
-  position: relative;
-  display: block;
-  width: 100% !important;
-  height: 82px !important;
-  opacity: 0.95;
-  filter:
-    drop-shadow(0 0 10px rgba(255, 255, 255, 0.16))
-    drop-shadow(0 0 18px rgba(255, 120, 54, 0.14));
-}
-
-.poster-waveform__transport {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .poster-timer {
@@ -270,6 +214,11 @@ select {
 @media (max-width: 520px) {
   .duel-stage__hero {
     margin-top: -3.9rem;
+  }
+
+  .duel-stage__hero--anchored {
+    top: calc(2.35rem + 6px);
+    padding-inline: 1rem;
   }
 
   .duel-stage__language-switch {

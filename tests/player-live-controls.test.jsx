@@ -4,29 +4,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/player/App.jsx';
 
-const waveformHandlers = new Map();
 const play = vi.fn(() => Promise.resolve());
 const pause = vi.fn();
-const stop = vi.fn();
-const setTime = vi.fn();
-const destroy = vi.fn();
-
-vi.mock('../src/lib/waveform.js', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    mountWaveform: () => ({
-      play,
-      pause,
-      stop,
-      setTime,
-      destroy,
-      on: (event, handler) => {
-        waveformHandlers.set(event, handler);
-      }
-    })
-  };
-});
 
 describe('live playback controls', () => {
   afterEach(() => {
@@ -34,12 +13,10 @@ describe('live playback controls', () => {
   });
 
   beforeEach(() => {
-    waveformHandlers.clear();
     play.mockClear();
     pause.mockClear();
-    stop.mockClear();
-    setTime.mockClear();
-    destroy.mockClear();
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(play);
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(pause);
   });
 
   it('switches from pause to resume without restarting the audio', async () => {
@@ -74,14 +51,16 @@ describe('live playback controls', () => {
       expect(play).toHaveBeenCalledTimes(1);
     });
 
-    waveformHandlers.get('play')?.();
+    const audio = screen.getByTestId('duel-audio');
+    audio.currentTime = 9;
+    audio.dispatchEvent(new Event('play'));
 
     await screen.findByRole('button', { name: 'Pause' });
     fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
 
     expect(pause).toHaveBeenCalledTimes(1);
 
-    waveformHandlers.get('pause')?.();
+    audio.dispatchEvent(new Event('pause'));
 
     await screen.findByRole('button', { name: 'Resume' });
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
@@ -90,8 +69,7 @@ describe('live playback controls', () => {
       expect(play).toHaveBeenCalledTimes(2);
     });
 
-    expect(stop).toHaveBeenCalledTimes(1);
-    expect(setTime).toHaveBeenCalledTimes(1);
+    expect(audio.currentTime).toBe(9);
   });
 
   it('keeps replay as a separate live control that restarts the clip', async () => {
@@ -126,12 +104,12 @@ describe('live playback controls', () => {
       expect(play).toHaveBeenCalledTimes(1);
     });
 
-    waveformHandlers.get('play')?.();
+    const audio = screen.getByTestId('duel-audio');
+    audio.currentTime = 14;
+    audio.dispatchEvent(new Event('play'));
 
     await screen.findByRole('button', { name: 'Replay' });
     const playsBeforeReplay = play.mock.calls.length;
-    const stopsBeforeReplay = stop.mock.calls.length;
-    const seeksBeforeReplay = setTime.mock.calls.length;
 
     fireEvent.click(screen.getByRole('button', { name: 'Replay' }));
 
@@ -139,8 +117,7 @@ describe('live playback controls', () => {
       expect(play.mock.calls.length).toBe(playsBeforeReplay + 1);
     });
 
-    expect(stop.mock.calls.length).toBe(stopsBeforeReplay + 1);
-    expect(setTime.mock.calls.length).toBe(seeksBeforeReplay + 1);
+    expect(audio.currentTime).toBe(0);
     expect(screen.getByRole('button', { name: 'Pause' })).toBeInTheDocument();
   });
 
@@ -176,7 +153,7 @@ describe('live playback controls', () => {
       expect(play).toHaveBeenCalled();
     });
 
-    waveformHandlers.get('play')?.();
+    screen.getByTestId('duel-audio').dispatchEvent(new Event('play'));
 
     fireEvent.change(screen.getByRole('textbox', { name: 'Circuit guess' }), {
       target: { value: 'Spa' }
@@ -222,18 +199,18 @@ describe('live playback controls', () => {
       expect(play).toHaveBeenCalled();
     });
 
-    waveformHandlers.get('play')?.();
+    screen.getByTestId('duel-audio').dispatchEvent(new Event('play'));
 
     await screen.findByRole('button', { name: 'Surrender' });
     fireEvent.click(screen.getByRole('button', { name: 'Surrender' }));
 
     await screen.findByTestId('result-review-page');
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Replay Audio' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Visualize Track' })).toBeEnabled();
     });
 
     const playsBeforeReplay = play.mock.calls.length;
-    fireEvent.click(screen.getByRole('button', { name: 'Replay Audio' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Visualize Track' }));
 
     await waitFor(() => {
       expect(play.mock.calls.length).toBeGreaterThan(playsBeforeReplay);
