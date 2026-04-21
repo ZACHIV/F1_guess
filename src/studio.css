@@ -588,6 +588,7 @@ button:disabled {
   place-items: center;
   min-height: 220px;
   padding: 18px;
+  overflow: hidden;
 }
 
 .track-preview-card__media img {
@@ -596,6 +597,66 @@ button:disabled {
   max-height: 240px;
   object-fit: contain;
   filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.32));
+}
+
+.track-preview-card__svg {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+.track-preview-card__track {
+  color: white;
+}
+
+.track-preview-card__track path,
+.track-preview-card__track circle,
+.track-preview-card__track rect,
+.track-preview-card__track polygon,
+.track-preview-card__track polyline,
+.track-preview-card__track ellipse,
+.track-preview-card__track line {
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.28));
+}
+
+.turn1-crop-editor__mask rect {
+  fill: rgba(4, 7, 12, 0.78);
+}
+
+.turn1-crop-editor__frame {
+  pointer-events: none;
+}
+
+#turn1-crop-rect {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: #ff8a3d;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 18px rgba(255, 106, 0, 0.32));
+}
+
+#turn1-crop-drag-surface {
+  fill: rgba(255, 255, 255, 0.001);
+  pointer-events: all;
+  cursor: move;
+}
+
+.turn1-crop-editor__handle {
+  fill: #ffefe1;
+  stroke: #ff6a00;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: all;
+}
+
+.turn1-crop-editor__handle[data-crop-handle="nw"],
+.turn1-crop-editor__handle[data-crop-handle="se"] {
+  cursor: nwse-resize;
+}
+
+.turn1-crop-editor__handle[data-crop-handle="ne"],
+.turn1-crop-editor__handle[data-crop-handle="sw"] {
+  cursor: nesw-resize;
 }
 
 .track-preview-card__meta {
@@ -623,6 +684,116 @@ button:disabled {
   color: #ffd6b0;
   font-size: 0.82rem;
   overflow-wrap: anywhere;
+}
+
+.turn1-crop-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.turn1-crop-toolbar {
+  display: grid;
+  gap: 14px;
+}
+
+.turn1-crop-toolbar__group {
+  display: grid;
+  gap: 8px;
+}
+
+.turn1-crop-toolbar__label {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.turn1-crop-toolbar__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.turn1-ratio-btn.is-active {
+  border-color: rgba(255, 106, 0, 0.62);
+  background: linear-gradient(135deg, rgba(255, 106, 0, 0.24), rgba(255, 255, 255, 0.08));
+  color: #fff0e1;
+  box-shadow: 0 12px 24px rgba(255, 106, 0, 0.16);
+}
+
+.turn1-crop-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(280px, 0.72fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.turn1-crop-panel,
+.turn1-crop-preview-card {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%),
+    rgba(255, 255, 255, 0.035);
+  padding: 16px;
+}
+
+.turn1-crop-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.turn1-crop-stat {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px;
+}
+
+.turn1-crop-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.turn1-crop-stat strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.turn1-crop-preview-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.turn1-crop-preview-card__header span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.turn1-crop-preview-card__viewport {
+  margin-top: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at top left, rgba(255, 106, 0, 0.12), transparent 38%),
+    rgba(255, 255, 255, 0.04);
+  min-height: 280px;
+  padding: 18px;
+}
+
+.turn1-crop-preview-card__svg {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
 }
 
 .preview-json {
@@ -700,6 +871,11 @@ button:disabled {
   }
 
   .track-preview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .turn1-crop-grid,
+  .turn1-crop-stats {
     grid-template-columns: 1fr;
   }
 

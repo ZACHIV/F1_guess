@@ -3,8 +3,30 @@ import {
   buildMetadataAssistantPrompt,
   parseMetadataAssistantResponse
 } from './lib/studio-ai-utils.js';
+import {
+  TURN1_RATIO_PRESETS,
+  buildDefaultTurn1Crop,
+  buildViewBoxBounds,
+  clampTurn1Crop,
+  moveTurn1Crop,
+  nudgeTurn1Crop,
+  resizeTurn1Crop,
+  scaleTurn1Crop,
+  withTurn1AspectRatio
+} from './lib/turn1-crop-utils.js';
 
 const app = document.querySelector('#app');
+
+function createTurn1CropAssetState() {
+  return {
+    svgSrc: '',
+    status: 'idle',
+    viewBox: '0 0 500 500',
+    bounds: { x: 0, y: 0, width: 500, height: 500 },
+    markup: '',
+    error: ''
+  };
+}
 
 const emptyDraft = () => ({
   id: '',
@@ -27,6 +49,8 @@ const emptyDraft = () => ({
   telemetryCarDataSrc: '',
   prompt: '',
   options: [],
+  turn1CornerName: '',
+  turn1Crop: null,
   createdAt: '',
   updatedAt: '',
   sortOrder: 0
@@ -63,6 +87,8 @@ const state = {
   sessions: [],
   drivers: [],
   laps: [],
+  cropAsset: createTurn1CropAssetState(),
+  cropInteraction: null,
   busy: false,
   busyLabel: '',
   message: '准备就绪。',
@@ -101,6 +127,10 @@ function renderOptions(options) {
   return Array.isArray(options) ? options.join(', ') : '';
 }
 
+function roundCropValue(value) {
+  return Number(value ?? 0).toFixed(1).replace(/\.0$/, '');
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -122,6 +152,69 @@ async function request(path, options = {}) {
   }
 
   return payload;
+}
+
+function setDraftTurn1Crop(bounds, nextCrop = state.draft.turn1Crop) {
+  state.draft.turn1Crop = nextCrop
+    ? clampTurn1Crop(nextCrop, bounds)
+    : buildDefaultTurn1Crop(bounds);
+  return state.draft.turn1Crop;
+}
+
+function resetCropAssetState() {
+  state.cropAsset = createTurn1CropAssetState();
+}
+
+async function loadTrackSvgMarkup(svgSrc) {
+  state.cropAsset = {
+    ...createTurn1CropAssetState(),
+    svgSrc,
+    status: 'loading'
+  };
+  render();
+
+  try {
+    const response = await fetch(svgSrc);
+    if (!response.ok) {
+      throw new Error(`赛道 SVG 加载失败：${response.status}`);
+    }
+
+    const source = await response.text();
+    const parser = new DOMParser();
+    const documentNode = parser.parseFromString(source, 'image/svg+xml');
+    const svgNode = documentNode.documentElement;
+
+    if (!svgNode || svgNode.nodeName.toLowerCase() !== 'svg') {
+      throw new Error('赛道 SVG 结构无法识别。');
+    }
+
+    const width = Number.parseFloat(svgNode.getAttribute('width') || '500');
+    const height = Number.parseFloat(svgNode.getAttribute('height') || '500');
+    const viewBox = svgNode.getAttribute('viewBox') || `0 0 ${width} ${height}`;
+    const bounds = buildViewBoxBounds(viewBox);
+    const markup = Array.from(svgNode.childNodes)
+      .map((node) => new XMLSerializer().serializeToString(node))
+      .join('');
+
+    state.cropAsset = {
+      svgSrc,
+      status: 'ready',
+      viewBox,
+      bounds,
+      markup,
+      error: ''
+    };
+    setDraftTurn1Crop(bounds);
+  } catch (error) {
+    state.cropAsset = {
+      ...createTurn1CropAssetState(),
+      svgSrc,
+      status: 'error',
+      error: error.message || '赛道 SVG 加载失败。'
+    };
+  }
+
+  render();
 }
 
 async function loadLibrary() {
@@ -225,6 +318,7 @@ function syncDraftFromForm() {
   state.draft.trackCountry = document.querySelector('#draft-track-country')?.value.trim() ?? state.draft.trackCountry;
   state.draft.driverName = document.querySelector('#draft-driver-name')?.value.trim() ?? state.draft.driverName;
   state.draft.driverNumber = document.querySelector('#draft-driver-number')?.value.trim() ?? state.draft.driverNumber;
+  state.draft.turn1CornerName = document.querySelector('#draft-turn1-corner-name')?.value.trim() ?? state.draft.turn1CornerName;
   state.draft.prompt = document.querySelector('#draft-prompt')?.value.trim() ?? state.draft.prompt;
   state.draft.options = (document.querySelector('#draft-options')?.value ?? '')
     .split(',')
@@ -327,6 +421,40 @@ function renderTrackPreview() {
     `;
   }
 
+  if (state.cropAsset.svgSrc !== state.draft.trackSvgSrc || state.cropAsset.status === 'loading') {
+    return `
+      <section class="result-section">
+        <div class="result-section__header">
+          <strong>赛道图预览</strong>
+          <span>加载中</span>
+        </div>
+        <div class="result-empty result-empty--wide">正在准备赛道 SVG 与 Turn 1 裁剪工作台...</div>
+      </section>
+    `;
+  }
+
+  if (state.cropAsset.status === 'error') {
+    return `
+      <section class="result-section">
+        <div class="result-section__header">
+          <strong>赛道图预览</strong>
+          <span>加载失败</span>
+        </div>
+        <div class="result-empty result-empty--wide">${escapeHtml(state.cropAsset.error || '赛道 SVG 无法加载。')}</div>
+      </section>
+    `;
+  }
+
+  const crop = setDraftTurn1Crop(state.cropAsset.bounds);
+  const handlePositions = {
+    nw: { x: crop.x, y: crop.y },
+    ne: { x: crop.x + crop.width, y: crop.y },
+    sw: { x: crop.x, y: crop.y + crop.height },
+    se: { x: crop.x + crop.width, y: crop.y + crop.height }
+  };
+  const bounds = state.cropAsset.bounds;
+  const ratioLabel = crop.aspectRatio || TURN1_RATIO_PRESETS[1].id;
+
   return `
     <section class="result-section">
       <div class="result-section__header">
@@ -335,12 +463,170 @@ function renderTrackPreview() {
       </div>
       <div class="track-preview-card">
         <div class="track-preview-card__media">
-          <img src="${escapeHtml(state.draft.trackSvgSrc)}" alt="${escapeHtml(state.draft.trackName || state.draft.id || 'track preview')}" />
+          <svg
+            class="track-preview-card__svg"
+            viewBox="${escapeHtml(state.cropAsset.viewBox)}"
+            id="turn1-crop-editor"
+            aria-label="Turn 1 裁剪工作台"
+          >
+            <g class="track-preview-card__track">
+              ${state.cropAsset.markup}
+            </g>
+            <g class="turn1-crop-editor__mask">
+              <rect id="turn1-mask-top" x="${bounds.x}" y="${bounds.y}" width="${bounds.width}" height="${Math.max(crop.y - bounds.y, 0)}"></rect>
+              <rect id="turn1-mask-left" x="${bounds.x}" y="${crop.y}" width="${Math.max(crop.x - bounds.x, 0)}" height="${crop.height}"></rect>
+              <rect id="turn1-mask-right" x="${crop.x + crop.width}" y="${crop.y}" width="${Math.max(bounds.x + bounds.width - (crop.x + crop.width), 0)}" height="${crop.height}"></rect>
+              <rect id="turn1-mask-bottom" x="${bounds.x}" y="${crop.y + crop.height}" width="${bounds.width}" height="${Math.max(bounds.y + bounds.height - (crop.y + crop.height), 0)}"></rect>
+            </g>
+            <g class="turn1-crop-editor__frame">
+              <rect
+                id="turn1-crop-rect"
+                x="${crop.x}"
+                y="${crop.y}"
+                width="${crop.width}"
+                height="${crop.height}"
+                rx="${Math.min(crop.width, crop.height) * 0.04}"
+                ry="${Math.min(crop.width, crop.height) * 0.04}"
+              ></rect>
+              <rect
+                id="turn1-crop-drag-surface"
+                data-crop-drag="move"
+                x="${crop.x}"
+                y="${crop.y}"
+                width="${crop.width}"
+                height="${crop.height}"
+              ></rect>
+              ${Object.entries(handlePositions).map(([handle, position]) => `
+                <circle
+                  class="turn1-crop-editor__handle"
+                  data-crop-handle="${handle}"
+                  cx="${position.x}"
+                  cy="${position.y}"
+                  r="${Math.max(Math.min(crop.width, crop.height) * 0.028, 8)}"
+                ></circle>
+              `).join('')}
+            </g>
+          </svg>
         </div>
         <div class="track-preview-card__meta">
           <strong>${escapeHtml(state.draft.trackName || state.form.trackQuery || '本地赛道图')}</strong>
           <span>${escapeHtml(state.draft.trackVectorSource || 'F1DB white-outline 赛道 SVG')}</span>
           <code>${escapeHtml(state.draft.trackSvgSrc)}</code>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderTurn1CropSection() {
+  if (!state.draft.trackSvgSrc) {
+    return `
+      <section class="result-section">
+        <div class="result-section__header">
+          <strong>Turn 1 裁剪</strong>
+          <span>等待赛道图</span>
+        </div>
+        <div class="result-empty result-empty--wide">先导入赛道 SVG，裁剪工具才会显示。</div>
+      </section>
+    `;
+  }
+
+  if (state.cropAsset.svgSrc !== state.draft.trackSvgSrc || state.cropAsset.status === 'loading') {
+    return `
+      <section class="result-section">
+        <div class="result-section__header">
+          <strong>Turn 1 裁剪</strong>
+          <span>准备中</span>
+        </div>
+        <div class="result-empty result-empty--wide">正在加载 SVG 资源并准备裁剪框。</div>
+      </section>
+    `;
+  }
+
+  if (state.cropAsset.status === 'error') {
+    return `
+      <section class="result-section">
+        <div class="result-section__header">
+          <strong>Turn 1 裁剪</strong>
+          <span>不可用</span>
+        </div>
+        <div class="result-empty result-empty--wide">${escapeHtml(state.cropAsset.error || '无法初始化 Turn 1 裁剪工具。')}</div>
+      </section>
+    `;
+  }
+
+  const crop = setDraftTurn1Crop(state.cropAsset.bounds);
+
+  return `
+    <section class="result-section">
+      <div class="result-section__header">
+        <strong>Turn 1 裁剪</strong>
+        <span>固定比例工作台</span>
+      </div>
+      <div class="turn1-crop-shell">
+        <div class="turn1-crop-toolbar">
+          <div class="turn1-crop-toolbar__group">
+            <span class="turn1-crop-toolbar__label">比例预设</span>
+            <div class="turn1-crop-toolbar__buttons">
+              ${TURN1_RATIO_PRESETS.map((preset) => `
+                <button
+                  class="mini-chip turn1-ratio-btn ${crop.aspectRatio === preset.id ? 'is-active' : ''}"
+                  type="button"
+                  data-turn1-ratio="${preset.id}"
+                >${preset.label}</button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="turn1-crop-toolbar__group">
+            <span class="turn1-crop-toolbar__label">微调</span>
+            <div class="turn1-crop-toolbar__buttons">
+              <button class="ghost-btn" type="button" data-turn1-nudge="left">←</button>
+              <button class="ghost-btn" type="button" data-turn1-nudge="up">↑</button>
+              <button class="ghost-btn" type="button" data-turn1-nudge="down">↓</button>
+              <button class="ghost-btn" type="button" data-turn1-nudge="right">→</button>
+              <button class="ghost-btn" type="button" data-turn1-scale="down">-</button>
+              <button class="ghost-btn" type="button" data-turn1-scale="up">+</button>
+              <button class="ghost-btn" type="button" id="turn1-reset-btn">重置</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="turn1-crop-grid">
+          <div class="turn1-crop-panel">
+            <label class="field field--full">
+              <span>一号弯名称</span>
+              <input id="draft-turn1-corner-name" value="${escapeHtml(state.draft.turn1CornerName || '')}" placeholder="Sainte Devote / Abbey / Senna S Turn 1" />
+            </label>
+
+            <div class="turn1-crop-stats">
+              <div class="turn1-crop-stat"><span>比例</span><strong data-turn1-stat="ratio">${escapeHtml(crop.aspectRatio)}</strong></div>
+              <div class="turn1-crop-stat"><span>X</span><strong data-turn1-stat="x">${roundCropValue(crop.x)}</strong></div>
+              <div class="turn1-crop-stat"><span>Y</span><strong data-turn1-stat="y">${roundCropValue(crop.y)}</strong></div>
+              <div class="turn1-crop-stat"><span>宽</span><strong data-turn1-stat="width">${roundCropValue(crop.width)}</strong></div>
+              <div class="turn1-crop-stat"><span>高</span><strong data-turn1-stat="height">${roundCropValue(crop.height)}</strong></div>
+            </div>
+
+            <div class="inline-note">
+              拖动框体可平移，拖四个角可在固定比例下缩放。右侧预览就是最终会保存的 Turn 1 题面。
+            </div>
+          </div>
+
+          <div class="turn1-crop-preview-card">
+            <div class="turn1-crop-preview-card__header">
+              <strong>裁剪结果</strong>
+              <span>实时预览</span>
+            </div>
+            <div class="turn1-crop-preview-card__viewport">
+              <svg
+                class="turn1-crop-preview-card__svg"
+                id="turn1-crop-preview-svg"
+                viewBox="${roundCropValue(crop.x)} ${roundCropValue(crop.y)} ${roundCropValue(crop.width)} ${roundCropValue(crop.height)}"
+                preserveAspectRatio="xMidYMid meet"
+              >
+                <g>${state.cropAsset.markup}</g>
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -628,6 +914,7 @@ function render() {
             </div>
             <div class="result-stack">
               ${renderTrackPreview()}
+              ${renderTurn1CropSection()}
             </div>
           </article>
 
@@ -668,7 +955,226 @@ async function runAction(message, fn) {
   render();
 }
 
+function syncDraftJsonPreview() {
+  const preview = document.querySelector('.preview-json');
+  if (preview) {
+    preview.value = JSON.stringify(state.draft, null, 2);
+  }
+}
+
+function applyTurn1CropDom(crop, bounds = state.cropAsset.bounds) {
+  const nextCrop = setDraftTurn1Crop(bounds, crop);
+  const maskTop = document.querySelector('#turn1-mask-top');
+  const maskLeft = document.querySelector('#turn1-mask-left');
+  const maskRight = document.querySelector('#turn1-mask-right');
+  const maskBottom = document.querySelector('#turn1-mask-bottom');
+  const frame = document.querySelector('#turn1-crop-rect');
+  const dragSurface = document.querySelector('#turn1-crop-drag-surface');
+  const previewSvg = document.querySelector('#turn1-crop-preview-svg');
+
+  if (maskTop) {
+    maskTop.setAttribute('x', String(bounds.x));
+    maskTop.setAttribute('y', String(bounds.y));
+    maskTop.setAttribute('width', String(bounds.width));
+    maskTop.setAttribute('height', String(Math.max(nextCrop.y - bounds.y, 0)));
+  }
+
+  if (maskLeft) {
+    maskLeft.setAttribute('x', String(bounds.x));
+    maskLeft.setAttribute('y', String(nextCrop.y));
+    maskLeft.setAttribute('width', String(Math.max(nextCrop.x - bounds.x, 0)));
+    maskLeft.setAttribute('height', String(nextCrop.height));
+  }
+
+  if (maskRight) {
+    maskRight.setAttribute('x', String(nextCrop.x + nextCrop.width));
+    maskRight.setAttribute('y', String(nextCrop.y));
+    maskRight.setAttribute('width', String(Math.max(bounds.x + bounds.width - (nextCrop.x + nextCrop.width), 0)));
+    maskRight.setAttribute('height', String(nextCrop.height));
+  }
+
+  if (maskBottom) {
+    maskBottom.setAttribute('x', String(bounds.x));
+    maskBottom.setAttribute('y', String(nextCrop.y + nextCrop.height));
+    maskBottom.setAttribute('width', String(bounds.width));
+    maskBottom.setAttribute('height', String(Math.max(bounds.y + bounds.height - (nextCrop.y + nextCrop.height), 0)));
+  }
+
+  if (frame) {
+    frame.setAttribute('x', String(nextCrop.x));
+    frame.setAttribute('y', String(nextCrop.y));
+    frame.setAttribute('width', String(nextCrop.width));
+    frame.setAttribute('height', String(nextCrop.height));
+    frame.setAttribute('rx', String(Math.min(nextCrop.width, nextCrop.height) * 0.04));
+    frame.setAttribute('ry', String(Math.min(nextCrop.width, nextCrop.height) * 0.04));
+  }
+
+  if (dragSurface) {
+    dragSurface.setAttribute('x', String(nextCrop.x));
+    dragSurface.setAttribute('y', String(nextCrop.y));
+    dragSurface.setAttribute('width', String(nextCrop.width));
+    dragSurface.setAttribute('height', String(nextCrop.height));
+  }
+
+  document.querySelectorAll('[data-crop-handle]').forEach((handle) => {
+    const key = handle.getAttribute('data-crop-handle');
+    const x = key === 'ne' || key === 'se' ? nextCrop.x + nextCrop.width : nextCrop.x;
+    const y = key === 'sw' || key === 'se' ? nextCrop.y + nextCrop.height : nextCrop.y;
+    handle.setAttribute('cx', String(x));
+    handle.setAttribute('cy', String(y));
+    handle.setAttribute('r', String(Math.max(Math.min(nextCrop.width, nextCrop.height) * 0.028, 8)));
+  });
+
+  if (previewSvg) {
+    previewSvg.setAttribute('viewBox', `${roundCropValue(nextCrop.x)} ${roundCropValue(nextCrop.y)} ${roundCropValue(nextCrop.width)} ${roundCropValue(nextCrop.height)}`);
+  }
+
+  document.querySelector('[data-turn1-stat="ratio"]')?.replaceChildren(document.createTextNode(nextCrop.aspectRatio));
+  document.querySelector('[data-turn1-stat="x"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.x)));
+  document.querySelector('[data-turn1-stat="y"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.y)));
+  document.querySelector('[data-turn1-stat="width"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.width)));
+  document.querySelector('[data-turn1-stat="height"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.height)));
+
+  syncDraftJsonPreview();
+}
+
+function getSvgPointer(svg, event) {
+  const matrix = svg.getScreenCTM();
+  if (!matrix) {
+    return { x: 0, y: 0 };
+  }
+
+  const point = new DOMPoint(event.clientX, event.clientY);
+  const localPoint = point.matrixTransform(matrix.inverse());
+  return {
+    x: localPoint.x,
+    y: localPoint.y
+  };
+}
+
+function bindTurn1CropEditor() {
+  if (!state.draft.trackSvgSrc) {
+    resetCropAssetState();
+    return;
+  }
+
+  if (state.cropAsset.svgSrc !== state.draft.trackSvgSrc) {
+    if (state.cropAsset.status !== 'loading') {
+      loadTrackSvgMarkup(state.draft.trackSvgSrc);
+    }
+    return;
+  }
+
+  if (state.cropAsset.status !== 'ready') {
+    return;
+  }
+
+  const svg = document.querySelector('#turn1-crop-editor');
+  if (!svg) {
+    return;
+  }
+
+  applyTurn1CropDom(state.draft.turn1Crop, state.cropAsset.bounds);
+
+  document.querySelectorAll('[data-turn1-ratio]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.draft.turn1Crop = withTurn1AspectRatio(state.draft.turn1Crop, button.getAttribute('data-turn1-ratio'), state.cropAsset.bounds);
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-turn1-nudge]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.draft.turn1Crop = nudgeTurn1Crop(
+        state.draft.turn1Crop,
+        button.getAttribute('data-turn1-nudge'),
+        state.cropAsset.bounds
+      );
+      render();
+    });
+  });
+
+  document.querySelectorAll('[data-turn1-scale]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.draft.turn1Crop = scaleTurn1Crop(
+        state.draft.turn1Crop,
+        button.getAttribute('data-turn1-scale') === 'up' ? 1.08 : 0.92,
+        state.cropAsset.bounds
+      );
+      render();
+    });
+  });
+
+  document.querySelector('#turn1-reset-btn')?.addEventListener('click', () => {
+    state.draft.turn1Crop = buildDefaultTurn1Crop(state.cropAsset.bounds, state.draft.turn1Crop?.aspectRatio);
+    render();
+  });
+
+  const startPointerInteraction = (event, interaction) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startPointer = getSvgPointer(svg, event);
+    const startCrop = setDraftTurn1Crop(state.cropAsset.bounds);
+    state.cropInteraction = {
+      pointerId: event.pointerId,
+      type: interaction.type,
+      handle: interaction.handle || '',
+      startPointer,
+      startCrop
+    };
+
+    svg.setPointerCapture(event.pointerId);
+
+    const onPointerMove = (moveEvent) => {
+      if (!state.cropInteraction || moveEvent.pointerId !== state.cropInteraction.pointerId) {
+        return;
+      }
+
+      const pointer = getSvgPointer(svg, moveEvent);
+      const deltaX = pointer.x - state.cropInteraction.startPointer.x;
+      const deltaY = pointer.y - state.cropInteraction.startPointer.y;
+      const nextCrop = state.cropInteraction.type === 'move'
+        ? moveTurn1Crop(state.cropInteraction.startCrop, deltaX, deltaY, state.cropAsset.bounds)
+        : resizeTurn1Crop(state.cropInteraction.startCrop, state.cropInteraction.handle, pointer, state.cropAsset.bounds);
+
+      applyTurn1CropDom(nextCrop, state.cropAsset.bounds);
+    };
+
+    const finishInteraction = (finishEvent) => {
+      if (!state.cropInteraction || finishEvent.pointerId !== state.cropInteraction.pointerId) {
+        return;
+      }
+
+      svg.removeEventListener('pointermove', onPointerMove);
+      svg.removeEventListener('pointerup', finishInteraction);
+      svg.removeEventListener('pointercancel', finishInteraction);
+      svg.releasePointerCapture(finishEvent.pointerId);
+      state.cropInteraction = null;
+    };
+
+    svg.addEventListener('pointermove', onPointerMove);
+    svg.addEventListener('pointerup', finishInteraction);
+    svg.addEventListener('pointercancel', finishInteraction);
+  };
+
+  document.querySelector('#turn1-crop-drag-surface')?.addEventListener('pointerdown', (event) => {
+    startPointerInteraction(event, { type: 'move' });
+  });
+
+  document.querySelectorAll('[data-crop-handle]').forEach((handle) => {
+    handle.addEventListener('pointerdown', (event) => {
+      startPointerInteraction(event, {
+        type: 'resize',
+        handle: handle.getAttribute('data-crop-handle')
+      });
+    });
+  });
+}
+
 function bindEvents() {
+  bindTurn1CropEditor();
+
   ['#library-search', '#category-filter', '#status-filter', '#library-sort'].forEach((selector) => {
     document.querySelector(selector)?.addEventListener('input', () => {
       syncFormState();
