@@ -249,14 +249,25 @@ export default function ArchiveApp() {
             Inspired by white-noise interfaces that start instantly and gallery sites that invite
             wandering, not menu-diving.
           </p>
-          <button
-            type="button"
-            className="archive-intro__jump"
-            aria-label="Jump into the archive"
-            onClick={jumpIntoArchive}
-          >
-            Jump in
-          </button>
+          <div className="archive-intro__actions">
+            <button
+              type="button"
+              className="archive-intro__jump"
+              aria-label="Jump into the archive"
+              onClick={jumpIntoArchive}
+            >
+              Jump in
+            </button>
+            <a
+              className="archive-intro__turn1"
+              href="/turn1.html"
+              aria-label="Enter the Turn 1 desk test"
+            >
+              <span>Mini game</span>
+              <strong>Turn 1 desk test</strong>
+              <em>Guess the circuit from its opening corner.</em>
+            </a>
+          </div>
         </aside>
       </section>
 
@@ -452,6 +463,13 @@ export default function ArchiveApp() {
                     <dd>{selectedTrack.firstGrandPrix}</dd>
                   </div>
                 </dl>
+                <a
+                  className="archive-detail__turn1-link"
+                  href={`/turn1.html?track=${selectedTrack.id}`}
+                  aria-label={`Enter ${selectedTrack.circuit} Turn 1 desk test`}
+                >
+                  Enter the Turn 1 desk test
+                </a>
               </div>
 
               <button

@@ -81,6 +81,13 @@ describe('ArchiveApp', () => {
     randomSpy.mockRestore();
   });
 
+  it('surfaces a turn 1 minigame entry in the archive intro panel', () => {
+    render(<ArchiveApp />);
+
+    const link = screen.getByRole('link', { name: /enter the turn 1 desk test/i });
+    expect(link).toHaveAttribute('href', '/turn1.html');
+  });
+
   it('opens an inline archive detail view for the selected circuit and closes on escape', () => {
     render(<ArchiveApp />);
 
@@ -156,5 +163,14 @@ describe('ArchiveApp', () => {
     fireEvent.click(screen.getByTestId('archive-detail-layout'));
 
     expect(screen.queryByRole('dialog', { name: /monte carlo archive detail/i })).not.toBeInTheDocument();
+  });
+
+  it('offers a track-specific turn 1 entry from the archive detail view', () => {
+    render(<ArchiveApp />);
+
+    openMonacoDossier();
+
+    const link = screen.getByRole('link', { name: /enter monte carlo turn 1 desk test/i });
+    expect(link).toHaveAttribute('href', '/turn1.html?track=monaco-quali-lando-norris-2025');
   });
 });

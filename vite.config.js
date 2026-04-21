@@ -8,7 +8,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        archive: fileURLToPath(new URL('./archive.html', import.meta.url))
+        archive: fileURLToPath(new URL('./archive.html', import.meta.url)),
+        turn1: fileURLToPath(new URL('./turn1.html', import.meta.url))
       }
     }
   },

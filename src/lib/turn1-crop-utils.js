@@ -176,6 +176,45 @@ export function buildTurn1CropFromSampledPoints(points, bounds, ratioId = DEFAUL
   }, bounds);
 }
 
+export function sampleSvgPathPoints(pathNode) {
+  if (!pathNode?.getTotalLength || !pathNode?.getPointAtLength) {
+    return [];
+  }
+
+  const totalLength = pathNode.getTotalLength();
+  const samples = Math.max(48, Math.round(totalLength / 4));
+  const points = [];
+
+  for (let index = 0; index <= samples; index += 1) {
+    const point = pathNode.getPointAtLength((totalLength * index) / samples);
+    points.push({ x: point.x, y: point.y });
+  }
+
+  return points;
+}
+
+export function buildTurn1CropFromSvgNode(svgNode, ratioId = DEFAULT_RATIO_ID) {
+  const bounds = buildViewBoxBounds(svgNode?.getAttribute?.('viewBox') || '0 0 500 500');
+  const pathNodes = Array.from(svgNode?.querySelectorAll?.('path') ?? []);
+
+  if (!pathNodes.length) {
+    return buildDefaultTurn1Crop(bounds, ratioId);
+  }
+
+  const longestPath = pathNodes
+    .map((pathNode) => ({
+      pathNode,
+      length: pathNode?.getTotalLength ? pathNode.getTotalLength() : 0
+    }))
+    .sort((left, right) => right.length - left.length)[0]?.pathNode;
+
+  if (!longestPath) {
+    return buildDefaultTurn1Crop(bounds, ratioId);
+  }
+
+  return buildTurn1CropFromSampledPoints(sampleSvgPathPoints(longestPath), bounds, ratioId);
+}
+
 export function clampTurn1Crop(crop, bounds) {
   const ratioId = crop?.aspectRatio || DEFAULT_RATIO_ID;
   const ratio = getAspectRatioValue(ratioId);
