@@ -1,7 +1,6 @@
 import {
-  buildTurn1CropFromSampledPoints,
+  buildTurn1CropFromSvgNode,
   buildDefaultTurn1Crop,
-  buildViewBoxBounds,
   moveTurn1Crop,
   nudgeTurn1Crop,
   resizeTurn1Crop,
@@ -10,39 +9,11 @@ import {
 } from '../lib/turn1-crop-utils.js';
 import { roundCropValue } from './utils.js';
 
-function sampleSvgPathPoints(pathNode) {
-  const totalLength = pathNode.getTotalLength();
-  const samples = Math.max(48, Math.round(totalLength / 4));
-  const points = [];
-
-  for (let index = 0; index <= samples; index += 1) {
-    const point = pathNode.getPointAtLength((totalLength * index) / samples);
-    points.push({ x: point.x, y: point.y });
-  }
-
-  return points;
-}
-
 function buildAutoDetectedTurn1Crop(markup, viewBox, ratioId = '4:3') {
   const parser = new DOMParser();
   const svgDoc = parser.parseFromString(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}">${markup}</svg>`, 'image/svg+xml');
   const svgNode = svgDoc.documentElement;
-  const bounds = buildViewBoxBounds(viewBox);
-  const pathNodes = Array.from(svgNode.querySelectorAll('path'));
-
-  if (!pathNodes.length) {
-    return buildDefaultTurn1Crop(bounds, ratioId);
-  }
-
-  const longestPath = pathNodes
-    .map((pathNode) => ({ pathNode, length: pathNode.getTotalLength() }))
-    .sort((left, right) => right.length - left.length)[0]?.pathNode;
-
-  if (!longestPath) {
-    return buildDefaultTurn1Crop(bounds, ratioId);
-  }
-
-  return buildTurn1CropFromSampledPoints(sampleSvgPathPoints(longestPath), bounds, ratioId);
+  return buildTurn1CropFromSvgNode(svgNode, ratioId);
 }
 
 export async function loadTrackSvgMarkup({
@@ -94,7 +65,11 @@ export async function loadTrackSvgMarkup({
     if (state.draft.turn1Crop && previousSvgSrc === svgSrc) {
       setDraftTurn1Crop(bounds);
     } else {
-      state.draft.turn1Crop = buildAutoDetectedTurn1Crop(markup, viewBox, state.draft.turn1Crop?.aspectRatio || '4:3');
+      try {
+        state.draft.turn1Crop = buildAutoDetectedTurn1Crop(markup, viewBox, state.draft.turn1Crop?.aspectRatio || '4:3');
+      } catch {
+        state.draft.turn1Crop = buildDefaultTurn1Crop(bounds, state.draft.turn1Crop?.aspectRatio || '4:3');
+      }
     }
   } catch (error) {
     state.cropAsset = {
@@ -103,6 +78,10 @@ export async function loadTrackSvgMarkup({
       status: 'error',
       error: error.message || '赛道 SVG 加载失败。'
     };
+    state.draft.turn1Crop = buildDefaultTurn1Crop(
+      state.cropAsset.bounds,
+      state.draft.turn1Crop?.aspectRatio || '4:3'
+    );
   }
 
   render();
