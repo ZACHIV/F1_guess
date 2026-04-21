@@ -80,6 +80,102 @@ export function buildDefaultTurn1Crop(bounds, ratioId = DEFAULT_RATIO_ID) {
   }, bounds);
 }
 
+function normalizeAngleDelta(delta) {
+  let nextDelta = delta;
+
+  while (nextDelta > Math.PI) {
+    nextDelta -= Math.PI * 2;
+  }
+
+  while (nextDelta < -Math.PI) {
+    nextDelta += Math.PI * 2;
+  }
+
+  return nextDelta;
+}
+
+function computeBoundingBox(points) {
+  return {
+    minX: Math.min(...points.map((point) => point.x)),
+    maxX: Math.max(...points.map((point) => point.x)),
+    minY: Math.min(...points.map((point) => point.y)),
+    maxY: Math.max(...points.map((point) => point.y))
+  };
+}
+
+export function buildTurn1CropFromSampledPoints(points, bounds, ratioId = DEFAULT_RATIO_ID) {
+  if (!Array.isArray(points) || points.length < 12) {
+    return buildDefaultTurn1Crop(bounds, ratioId);
+  }
+
+  const segmentAngles = [];
+  for (let index = 1; index < points.length; index += 1) {
+    const dx = points[index].x - points[index - 1].x;
+    const dy = points[index].y - points[index - 1].y;
+    segmentAngles.push(Math.atan2(dy, dx));
+  }
+
+  const localCurvature = segmentAngles.map((angle, index) => {
+    if (index === 0) {
+      return 0;
+    }
+
+    return Math.abs(normalizeAngleDelta(angle - segmentAngles[index - 1]));
+  });
+
+  const windowRadius = Math.max(4, Math.round(points.length * 0.025));
+  const scanStart = Math.min(points.length - 1, Math.max(windowRadius + 1, Math.round(points.length * 0.03)));
+  const rollingScores = localCurvature.map((_, index) => {
+    const start = Math.max(0, index - windowRadius);
+    const end = Math.min(localCurvature.length - 1, index + windowRadius);
+    let total = 0;
+
+    for (let cursor = start; cursor <= end; cursor += 1) {
+      total += localCurvature[cursor];
+    }
+
+    return total;
+  });
+
+  let peakIndex = -1;
+  let peakScore = 0;
+  const threshold = 0.5;
+
+  for (let index = scanStart; index < rollingScores.length; index += 1) {
+    if (rollingScores[index] > threshold) {
+      peakIndex = index;
+      peakScore = rollingScores[index];
+      break;
+    }
+  }
+
+  if (peakIndex === -1) {
+    peakIndex = rollingScores.indexOf(Math.max(...rollingScores.slice(scanStart)));
+    peakScore = rollingScores[peakIndex] ?? 0;
+  }
+
+  if (!Number.isFinite(peakScore) || peakScore <= 0) {
+    return buildDefaultTurn1Crop(bounds, ratioId);
+  }
+
+  const expansion = Math.max(4, Math.round(points.length * 0.025));
+  const segmentStart = Math.max(0, peakIndex - expansion);
+  const segmentEnd = Math.min(points.length - 1, peakIndex + expansion);
+  const segmentPoints = points.slice(segmentStart, segmentEnd + 1);
+  const box = computeBoundingBox(segmentPoints);
+  const segmentWidth = Math.max(box.maxX - box.minX, 1);
+  const segmentHeight = Math.max(box.maxY - box.minY, 1);
+  const padding = Math.max(segmentWidth, segmentHeight) * 0.28;
+
+  return clampTurn1Crop({
+    aspectRatio: getTurn1RatioPreset(ratioId).id,
+    x: box.minX - padding,
+    y: box.minY - padding,
+    width: segmentWidth + padding * 2,
+    height: (segmentWidth + padding * 2) / getAspectRatioValue(ratioId)
+  }, bounds);
+}
+
 export function clampTurn1Crop(crop, bounds) {
   const ratioId = crop?.aspectRatio || DEFAULT_RATIO_ID;
   const ratio = getAspectRatioValue(ratioId);

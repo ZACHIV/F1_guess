@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTurn1CropFromSampledPoints,
   buildDefaultTurn1Crop,
   buildViewBoxBounds,
   clampTurn1Crop,
@@ -22,6 +23,32 @@ describe('turn1 crop utils', () => {
     expect((crop.width / crop.height).toFixed(4)).toBe((16 / 9).toFixed(4));
     expect(crop.x).toBeGreaterThanOrEqual(0);
     expect(crop.y).toBeGreaterThanOrEqual(0);
+  });
+
+  it('detects an initial turn crop from sampled path points', () => {
+    const syntheticTurn = [
+      { x: 20, y: 200 },
+      { x: 60, y: 200 },
+      { x: 100, y: 200 },
+      { x: 140, y: 200 },
+      { x: 180, y: 200 },
+      { x: 210, y: 200 },
+      { x: 230, y: 190 },
+      { x: 245, y: 170 },
+      { x: 250, y: 140 },
+      { x: 248, y: 110 },
+      { x: 240, y: 80 },
+      { x: 228, y: 60 },
+      { x: 210, y: 45 },
+      { x: 185, y: 35 },
+      { x: 160, y: 30 }
+    ];
+
+    const crop = buildTurn1CropFromSampledPoints(syntheticTurn, bounds, '4:3');
+
+    expect(crop.x + crop.width / 2).toBeGreaterThan(130);
+    expect(crop.y + crop.height / 2).toBeLessThan(180);
+    expect(crop.width / crop.height).toBeCloseTo(4 / 3, 3);
   });
 
   it('keeps crops inside bounds when moving', () => {

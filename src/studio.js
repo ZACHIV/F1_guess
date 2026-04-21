@@ -4,141 +4,32 @@ import {
   parseMetadataAssistantResponse
 } from './lib/studio-ai-utils.js';
 import {
-  TURN1_RATIO_PRESETS,
   buildDefaultTurn1Crop,
-  buildViewBoxBounds,
-  clampTurn1Crop,
-  moveTurn1Crop,
-  nudgeTurn1Crop,
-  resizeTurn1Crop,
-  scaleTurn1Crop,
-  withTurn1AspectRatio
+  clampTurn1Crop
 } from './lib/turn1-crop-utils.js';
+import {
+  createDefaultStudioFormState,
+  createEmptyStudioDraft,
+  createInitialStudioState,
+  createTurn1CropAssetState,
+  getLapStats
+} from './studio/state.js';
+import {
+  formatDurationLabel,
+  friendlyErrorMessage,
+  requireValue
+} from './studio/utils.js';
+import {
+  renderStudioApp,
+  renderTrackPreview,
+  renderTurn1CropSection
+} from './studio/render.js';
+import {
+  bindTurn1CropEditor
+} from './studio/turn1-crop-workbench.js';
 
 const app = document.querySelector('#app');
-
-function createTurn1CropAssetState() {
-  return {
-    svgSrc: '',
-    status: 'idle',
-    viewBox: '0 0 500 500',
-    bounds: { x: 0, y: 0, width: 500, height: 500 },
-    markup: '',
-    error: ''
-  };
-}
-
-const emptyDraft = () => ({
-  id: '',
-  title: '',
-  category: 'Uncategorized',
-  status: 'draft',
-  tags: [],
-  notes: '',
-  audioSrc: '',
-  clipDurationMs: 0,
-  durationLabel: '',
-  trackName: '',
-  trackCountry: '',
-  driverName: '',
-  driverNumber: '',
-  telemetrySource: '',
-  trackVectorSource: '',
-  trackSvgSrc: '',
-  telemetryLocationSrc: '',
-  telemetryCarDataSrc: '',
-  prompt: '',
-  options: [],
-  turn1CornerName: '',
-  turn1Crop: null,
-  createdAt: '',
-  updatedAt: '',
-  sortOrder: 0
-});
-
-const defaultFormState = () => ({
-  librarySearch: '',
-  categoryFilter: 'all',
-  statusFilter: 'all',
-  librarySort: 'manual',
-  videoUrl: '',
-  videoTitle: '',
-  videoDescription: '',
-  aiPrompt: '',
-  aiResponse: '',
-  trackAsset: '',
-  trackQuery: '',
-  year: '2025',
-  sessionName: 'Qualifying',
-  sessionKey: '',
-  lapNumber: ''
-});
-
-const state = {
-  challenges: [],
-  librarySummary: {
-    total: 0,
-    categories: [],
-    statuses: []
-  },
-  selectedId: '',
-  draft: emptyDraft(),
-  form: defaultFormState(),
-  sessions: [],
-  drivers: [],
-  laps: [],
-  cropAsset: createTurn1CropAssetState(),
-  cropInteraction: null,
-  busy: false,
-  busyLabel: '',
-  message: '准备就绪。',
-  tone: 'neutral',
-  activity: []
-};
-
-function getLapStats() {
-  if (!state.laps.length) {
-    return {
-      fastestLap: null,
-      maxLapNumber: ''
-    };
-  }
-
-  const fastestLap = [...state.laps]
-    .filter((lap) => lap.lap_duration !== null)
-    .sort((left, right) => Number(left.lap_duration) - Number(right.lap_duration))[0] ?? null;
-
-  const maxLapNumber = state.laps.reduce((max, lap) => Math.max(max, Number(lap.lap_number) || 0), 0);
-
-  return {
-    fastestLap,
-    maxLapNumber: maxLapNumber ? String(maxLapNumber) : ''
-  };
-}
-
-function formatDurationLabel(durationMs) {
-  const totalSeconds = Math.floor(durationMs / 1000);
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  return `00:${minutes}:${seconds}`;
-}
-
-function renderOptions(options) {
-  return Array.isArray(options) ? options.join(', ') : '';
-}
-
-function roundCropValue(value) {
-  return Number(value ?? 0).toFixed(1).replace(/\.0$/, '');
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
+const state = createInitialStudioState();
 
 async function request(path, options = {}) {
   const response = await fetch(path, {
@@ -159,62 +50,6 @@ function setDraftTurn1Crop(bounds, nextCrop = state.draft.turn1Crop) {
     ? clampTurn1Crop(nextCrop, bounds)
     : buildDefaultTurn1Crop(bounds);
   return state.draft.turn1Crop;
-}
-
-function resetCropAssetState() {
-  state.cropAsset = createTurn1CropAssetState();
-}
-
-async function loadTrackSvgMarkup(svgSrc) {
-  state.cropAsset = {
-    ...createTurn1CropAssetState(),
-    svgSrc,
-    status: 'loading'
-  };
-  render();
-
-  try {
-    const response = await fetch(svgSrc);
-    if (!response.ok) {
-      throw new Error(`赛道 SVG 加载失败：${response.status}`);
-    }
-
-    const source = await response.text();
-    const parser = new DOMParser();
-    const documentNode = parser.parseFromString(source, 'image/svg+xml');
-    const svgNode = documentNode.documentElement;
-
-    if (!svgNode || svgNode.nodeName.toLowerCase() !== 'svg') {
-      throw new Error('赛道 SVG 结构无法识别。');
-    }
-
-    const width = Number.parseFloat(svgNode.getAttribute('width') || '500');
-    const height = Number.parseFloat(svgNode.getAttribute('height') || '500');
-    const viewBox = svgNode.getAttribute('viewBox') || `0 0 ${width} ${height}`;
-    const bounds = buildViewBoxBounds(viewBox);
-    const markup = Array.from(svgNode.childNodes)
-      .map((node) => new XMLSerializer().serializeToString(node))
-      .join('');
-
-    state.cropAsset = {
-      svgSrc,
-      status: 'ready',
-      viewBox,
-      bounds,
-      markup,
-      error: ''
-    };
-    setDraftTurn1Crop(bounds);
-  } catch (error) {
-    state.cropAsset = {
-      ...createTurn1CropAssetState(),
-      svgSrc,
-      status: 'error',
-      error: error.message || '赛道 SVG 加载失败。'
-    };
-  }
-
-  render();
 }
 
 async function loadLibrary() {
@@ -300,10 +135,6 @@ function getFilteredChallenges() {
   return [...filtered].sort((left, right) => left.sortOrder - right.sortOrder);
 }
 
-function getSelectedChallengeIndex() {
-  return state.challenges.findIndex((item) => item.id === state.selectedId);
-}
-
 function syncDraftFromForm() {
   state.draft.id = document.querySelector('#draft-id')?.value.trim() ?? state.draft.id;
   state.draft.title = document.querySelector('#draft-title')?.value.trim() ?? state.draft.title;
@@ -349,288 +180,21 @@ function syncAllFromForm() {
   syncFormState();
 }
 
-function requireValue(value, message) {
-  if (!String(value ?? '').trim()) {
-    throw new Error(message);
-  }
-}
+function render() {
+  const filteredChallenges = getFilteredChallenges();
+  const lapStats = getLapStats(state.laps);
+  const trackPreviewHtml = renderTrackPreview({ state, setDraftTurn1Crop });
+  const turn1CropHtml = renderTurn1CropSection({ state, setDraftTurn1Crop });
 
-function friendlyErrorMessage(message) {
-  if (message.includes('No timed lap found')) {
-    return '没有找到符合条件的有效圈速，请确认场次 Key、车手号码和圈数是否正确。';
-  }
+  app.innerHTML = renderStudioApp({
+    state,
+    filteredChallenges,
+    lapStats,
+    trackPreviewHtml,
+    turn1CropHtml
+  });
 
-  if (message.includes('F1DB circuit not found')) {
-    return '本地 f1db 里没有找到对应赛道，请检查赛道名或换一个别名再试。';
-  }
-
-  if (message.includes('F1DB SVG asset is missing')) {
-    return '本地 f1db 资源不完整，缺少对应的赛道 SVG 文件。';
-  }
-
-  if (message.includes('F1DB local repository is missing')) {
-    return '没有找到本地 f1db 仓库，请确认它位于 submodule/f1db。';
-  }
-
-  if (message.includes('ffprobe failed')) {
-    return '音频时长探测失败，请确认 FFmpeg / ffprobe 已正确安装。';
-  }
-
-  if (message.includes('Duplicate challenge id already exists')) {
-    return '复制失败：新的题目 ID 已存在。';
-  }
-
-  if (message.includes('Source challenge not found')) {
-    return '复制失败：没有找到要复制的题目。';
-  }
-
-  return message || '发生了未知错误。';
-}
-
-function renderResultSection(title, items, labelBuilder) {
-  return `
-    <section class="result-section">
-      <div class="result-section__header">
-        <strong>${title}</strong>
-        <span>${items.length} 条</span>
-      </div>
-      <div class="result-grid">
-        ${
-          items.length
-            ? items
-                .slice(0, 6)
-                .map((item) => `<div class="result-card">${labelBuilder(item)}</div>`)
-                .join('')
-            : '<div class="result-empty">暂无结果</div>'
-        }
-      </div>
-    </section>
-  `;
-}
-
-function renderTrackPreview() {
-  if (!state.draft.trackSvgSrc) {
-    return `
-      <section class="result-section">
-        <div class="result-section__header">
-          <strong>赛道图预览</strong>
-          <span>未匹配</span>
-        </div>
-        <div class="result-empty result-empty--wide">还没有导入赛道 SVG。点击“添加地图”后会在这里显示匹配结果。</div>
-      </section>
-    `;
-  }
-
-  if (state.cropAsset.svgSrc !== state.draft.trackSvgSrc || state.cropAsset.status === 'loading') {
-    return `
-      <section class="result-section">
-        <div class="result-section__header">
-          <strong>赛道图预览</strong>
-          <span>加载中</span>
-        </div>
-        <div class="result-empty result-empty--wide">正在准备赛道 SVG 与 Turn 1 裁剪工作台...</div>
-      </section>
-    `;
-  }
-
-  if (state.cropAsset.status === 'error') {
-    return `
-      <section class="result-section">
-        <div class="result-section__header">
-          <strong>赛道图预览</strong>
-          <span>加载失败</span>
-        </div>
-        <div class="result-empty result-empty--wide">${escapeHtml(state.cropAsset.error || '赛道 SVG 无法加载。')}</div>
-      </section>
-    `;
-  }
-
-  const crop = setDraftTurn1Crop(state.cropAsset.bounds);
-  const handlePositions = {
-    nw: { x: crop.x, y: crop.y },
-    ne: { x: crop.x + crop.width, y: crop.y },
-    sw: { x: crop.x, y: crop.y + crop.height },
-    se: { x: crop.x + crop.width, y: crop.y + crop.height }
-  };
-  const bounds = state.cropAsset.bounds;
-  const ratioLabel = crop.aspectRatio || TURN1_RATIO_PRESETS[1].id;
-
-  return `
-    <section class="result-section">
-      <div class="result-section__header">
-        <strong>赛道图预览</strong>
-        <span>已匹配</span>
-      </div>
-      <div class="track-preview-card">
-        <div class="track-preview-card__media">
-          <svg
-            class="track-preview-card__svg"
-            viewBox="${escapeHtml(state.cropAsset.viewBox)}"
-            id="turn1-crop-editor"
-            aria-label="Turn 1 裁剪工作台"
-          >
-            <g class="track-preview-card__track">
-              ${state.cropAsset.markup}
-            </g>
-            <g class="turn1-crop-editor__mask">
-              <rect id="turn1-mask-top" x="${bounds.x}" y="${bounds.y}" width="${bounds.width}" height="${Math.max(crop.y - bounds.y, 0)}"></rect>
-              <rect id="turn1-mask-left" x="${bounds.x}" y="${crop.y}" width="${Math.max(crop.x - bounds.x, 0)}" height="${crop.height}"></rect>
-              <rect id="turn1-mask-right" x="${crop.x + crop.width}" y="${crop.y}" width="${Math.max(bounds.x + bounds.width - (crop.x + crop.width), 0)}" height="${crop.height}"></rect>
-              <rect id="turn1-mask-bottom" x="${bounds.x}" y="${crop.y + crop.height}" width="${bounds.width}" height="${Math.max(bounds.y + bounds.height - (crop.y + crop.height), 0)}"></rect>
-            </g>
-            <g class="turn1-crop-editor__frame">
-              <rect
-                id="turn1-crop-rect"
-                x="${crop.x}"
-                y="${crop.y}"
-                width="${crop.width}"
-                height="${crop.height}"
-                rx="${Math.min(crop.width, crop.height) * 0.04}"
-                ry="${Math.min(crop.width, crop.height) * 0.04}"
-              ></rect>
-              <rect
-                id="turn1-crop-drag-surface"
-                data-crop-drag="move"
-                x="${crop.x}"
-                y="${crop.y}"
-                width="${crop.width}"
-                height="${crop.height}"
-              ></rect>
-              ${Object.entries(handlePositions).map(([handle, position]) => `
-                <circle
-                  class="turn1-crop-editor__handle"
-                  data-crop-handle="${handle}"
-                  cx="${position.x}"
-                  cy="${position.y}"
-                  r="${Math.max(Math.min(crop.width, crop.height) * 0.028, 8)}"
-                ></circle>
-              `).join('')}
-            </g>
-          </svg>
-        </div>
-        <div class="track-preview-card__meta">
-          <strong>${escapeHtml(state.draft.trackName || state.form.trackQuery || '本地赛道图')}</strong>
-          <span>${escapeHtml(state.draft.trackVectorSource || 'F1DB white-outline 赛道 SVG')}</span>
-          <code>${escapeHtml(state.draft.trackSvgSrc)}</code>
-        </div>
-      </div>
-    </section>
-  `;
-}
-
-function renderTurn1CropSection() {
-  if (!state.draft.trackSvgSrc) {
-    return `
-      <section class="result-section">
-        <div class="result-section__header">
-          <strong>Turn 1 裁剪</strong>
-          <span>等待赛道图</span>
-        </div>
-        <div class="result-empty result-empty--wide">先导入赛道 SVG，裁剪工具才会显示。</div>
-      </section>
-    `;
-  }
-
-  if (state.cropAsset.svgSrc !== state.draft.trackSvgSrc || state.cropAsset.status === 'loading') {
-    return `
-      <section class="result-section">
-        <div class="result-section__header">
-          <strong>Turn 1 裁剪</strong>
-          <span>准备中</span>
-        </div>
-        <div class="result-empty result-empty--wide">正在加载 SVG 资源并准备裁剪框。</div>
-      </section>
-    `;
-  }
-
-  if (state.cropAsset.status === 'error') {
-    return `
-      <section class="result-section">
-        <div class="result-section__header">
-          <strong>Turn 1 裁剪</strong>
-          <span>不可用</span>
-        </div>
-        <div class="result-empty result-empty--wide">${escapeHtml(state.cropAsset.error || '无法初始化 Turn 1 裁剪工具。')}</div>
-      </section>
-    `;
-  }
-
-  const crop = setDraftTurn1Crop(state.cropAsset.bounds);
-
-  return `
-    <section class="result-section">
-      <div class="result-section__header">
-        <strong>Turn 1 裁剪</strong>
-        <span>固定比例工作台</span>
-      </div>
-      <div class="turn1-crop-shell">
-        <div class="turn1-crop-toolbar">
-          <div class="turn1-crop-toolbar__group">
-            <span class="turn1-crop-toolbar__label">比例预设</span>
-            <div class="turn1-crop-toolbar__buttons">
-              ${TURN1_RATIO_PRESETS.map((preset) => `
-                <button
-                  class="mini-chip turn1-ratio-btn ${crop.aspectRatio === preset.id ? 'is-active' : ''}"
-                  type="button"
-                  data-turn1-ratio="${preset.id}"
-                >${preset.label}</button>
-              `).join('')}
-            </div>
-          </div>
-          <div class="turn1-crop-toolbar__group">
-            <span class="turn1-crop-toolbar__label">微调</span>
-            <div class="turn1-crop-toolbar__buttons">
-              <button class="ghost-btn" type="button" data-turn1-nudge="left">←</button>
-              <button class="ghost-btn" type="button" data-turn1-nudge="up">↑</button>
-              <button class="ghost-btn" type="button" data-turn1-nudge="down">↓</button>
-              <button class="ghost-btn" type="button" data-turn1-nudge="right">→</button>
-              <button class="ghost-btn" type="button" data-turn1-scale="down">-</button>
-              <button class="ghost-btn" type="button" data-turn1-scale="up">+</button>
-              <button class="ghost-btn" type="button" id="turn1-reset-btn">重置</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="turn1-crop-grid">
-          <div class="turn1-crop-panel">
-            <label class="field field--full">
-              <span>一号弯名称</span>
-              <input id="draft-turn1-corner-name" value="${escapeHtml(state.draft.turn1CornerName || '')}" placeholder="Sainte Devote / Abbey / Senna S Turn 1" />
-            </label>
-
-            <div class="turn1-crop-stats">
-              <div class="turn1-crop-stat"><span>比例</span><strong data-turn1-stat="ratio">${escapeHtml(crop.aspectRatio)}</strong></div>
-              <div class="turn1-crop-stat"><span>X</span><strong data-turn1-stat="x">${roundCropValue(crop.x)}</strong></div>
-              <div class="turn1-crop-stat"><span>Y</span><strong data-turn1-stat="y">${roundCropValue(crop.y)}</strong></div>
-              <div class="turn1-crop-stat"><span>宽</span><strong data-turn1-stat="width">${roundCropValue(crop.width)}</strong></div>
-              <div class="turn1-crop-stat"><span>高</span><strong data-turn1-stat="height">${roundCropValue(crop.height)}</strong></div>
-            </div>
-
-            <div class="inline-note">
-              拖动框体可平移，拖四个角可在固定比例下缩放。右侧预览就是最终会保存的 Turn 1 题面。
-            </div>
-          </div>
-
-          <div class="turn1-crop-preview-card">
-            <div class="turn1-crop-preview-card__header">
-              <strong>裁剪结果</strong>
-              <span>实时预览</span>
-            </div>
-            <div class="turn1-crop-preview-card__viewport">
-              <svg
-                class="turn1-crop-preview-card__svg"
-                id="turn1-crop-preview-svg"
-                viewBox="${roundCropValue(crop.x)} ${roundCropValue(crop.y)} ${roundCropValue(crop.width)} ${roundCropValue(crop.height)}"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                <g>${state.cropAsset.markup}</g>
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
+  bindEvents();
 }
 
 async function resolveSessionKeyForTelemetry() {
@@ -677,260 +241,6 @@ async function resolveLapsForTelemetry() {
   return state.laps;
 }
 
-function render() {
-  const filteredChallenges = getFilteredChallenges();
-  const lapStats = getLapStats();
-
-  app.innerHTML = `
-    <main class="studio-shell">
-      <header class="studio-header">
-        <div>
-          <p class="eyebrow">内容后台</p>
-          <h1>F1 Guess 开发者模式</h1>
-          <p class="studio-subtitle">从网址提整段音频，到赛道 SVG、OpenF1 遥测数据、题目保存，全部集中在这里。</p>
-        </div>
-        <div class="studio-header__actions">
-          <button class="primary" type="button" id="save-btn" ${state.busy ? 'disabled' : ''}>保存题目</button>
-          <button class="secondary" type="button" id="duplicate-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>复制题目</button>
-          <button class="danger" type="button" id="delete-btn" ${!state.draft.id || state.busy ? 'disabled' : ''}>删除题目</button>
-          <a class="studio-link" href="/" target="_blank" rel="noreferrer">打开前台预览</a>
-        </div>
-      </header>
-
-      <section class="studio-layout">
-        <aside class="library-panel">
-          <div class="panel-title-row">
-            <div>
-              <p class="eyebrow">题库</p>
-              <h2>本地题库</h2>
-            </div>
-            <button class="secondary" type="button" id="new-btn" ${state.busy ? 'disabled' : ''}>新建题目</button>
-          </div>
-          <div class="library-stats">
-            <div class="library-stat"><strong>${state.librarySummary.total}</strong><span>总题目</span></div>
-            <div class="library-stat"><strong>${state.librarySummary.categories.length}</strong><span>分类</span></div>
-            <div class="library-stat"><strong>${state.librarySummary.statuses.length}</strong><span>状态</span></div>
-          </div>
-          <div class="form-grid library-filters">
-            <label class="field field--full">
-              <span>搜索</span>
-              <input id="library-search" value="${escapeHtml(state.form.librarySearch)}" placeholder="标题 / 赛道 / 车手 / 标签" />
-            </label>
-            <label class="field">
-              <span>分类筛选</span>
-              <select id="category-filter">
-                <option value="all" ${state.form.categoryFilter === 'all' ? 'selected' : ''}>全部分类</option>
-                ${state.librarySummary.categories
-                  .map((category) => `<option value="${escapeHtml(category)}" ${state.form.categoryFilter === category ? 'selected' : ''}>${escapeHtml(category)}</option>`)
-                  .join('')}
-              </select>
-            </label>
-            <label class="field">
-              <span>状态筛选</span>
-              <select id="status-filter">
-                <option value="all" ${state.form.statusFilter === 'all' ? 'selected' : ''}>全部状态</option>
-                ${state.librarySummary.statuses
-                  .map((status) => `<option value="${escapeHtml(status)}" ${state.form.statusFilter === status ? 'selected' : ''}>${escapeHtml(status)}</option>`)
-                  .join('')}
-              </select>
-            </label>
-            <label class="field field--full">
-              <span>排序方式</span>
-              <select id="library-sort">
-                <option value="manual" ${state.form.librarySort === 'manual' ? 'selected' : ''}>手动排序</option>
-                <option value="updated-desc" ${state.form.librarySort === 'updated-desc' ? 'selected' : ''}>最近更新优先</option>
-                <option value="created-desc" ${state.form.librarySort === 'created-desc' ? 'selected' : ''}>最近创建优先</option>
-                <option value="title-asc" ${state.form.librarySort === 'title-asc' ? 'selected' : ''}>标题 A-Z</option>
-                <option value="category-asc" ${state.form.librarySort === 'category-asc' ? 'selected' : ''}>分类 A-Z</option>
-              </select>
-            </label>
-          </div>
-          <div class="library-list">
-            ${filteredChallenges.length
-              ? filteredChallenges
-              .map(
-                (challenge) => `
-                  <article class="library-item ${challenge.id === state.selectedId ? 'is-active' : ''}">
-                    <button class="library-item__main" type="button" data-select-id="${challenge.id}">
-                      <strong>${escapeHtml(challenge.title || challenge.id)}</strong>
-                      <span>${escapeHtml(challenge.trackName || '未命名赛道')} · ${escapeHtml(challenge.driverName || '未知车手')}</span>
-                      <div class="library-item__meta">
-                        <span class="mini-chip">${escapeHtml(challenge.category || 'Uncategorized')}</span>
-                        <span class="mini-chip is-status">${escapeHtml(challenge.status || 'draft')}</span>
-                      </div>
-                    </button>
-                    <div class="library-item__actions">
-                      <button class="ghost-btn" type="button" data-duplicate-id="${challenge.id}" ${state.busy ? 'disabled' : ''}>复制</button>
-                      <button class="ghost-btn" type="button" data-move-id="${challenge.id}" data-direction="up" ${state.busy || state.form.librarySort !== 'manual' ? 'disabled' : ''}>上移</button>
-                      <button class="ghost-btn" type="button" data-move-id="${challenge.id}" data-direction="down" ${state.busy || state.form.librarySort !== 'manual' ? 'disabled' : ''}>下移</button>
-                    </div>
-                  </article>
-                `
-              )
-              .join('')
-              : '<div class="result-empty">当前筛选条件下没有题目</div>'}
-          </div>
-        </aside>
-
-        <section class="workspace-panel">
-          <article class="studio-card">
-            <div class="panel-title-row">
-              <div>
-                <p class="eyebrow">状态</p>
-                <h2>执行反馈</h2>
-              </div>
-              <span class="status-chip is-${state.tone}">${state.busy ? '处理中' : '待命中'}</span>
-            </div>
-            <div class="status-box is-${state.tone}">${state.message}</div>
-            <div class="status-detail">${state.busy ? `当前操作：${escapeHtml(state.busyLabel || '后台处理中')}` : '当前没有进行中的任务。'}</div>
-            <div class="progress-shell ${state.busy ? 'is-busy' : ''}">
-              <div class="progress-bar"></div>
-            </div>
-            <div class="activity-list">
-              ${
-                state.activity.length
-                  ? state.activity
-                      .map(
-                        (item) => `
-                          <div class="activity-item">
-                            <span class="activity-item__time">${item.time}</span>
-                            <strong class="activity-item__tone is-${item.tone}">${escapeHtml(item.message)}</strong>
-                          </div>
-                        `
-                      )
-                      .join('')
-                  : '<div class="result-empty">还没有操作记录</div>'
-              }
-            </div>
-          </article>
-
-          <article class="studio-card">
-            <p class="eyebrow">步骤一</p>
-            <h2>整段音频提取</h2>
-            <div class="form-grid">
-              <label class="field field--full">
-                <span>视频网址</span>
-                <input id="video-url" value="${escapeHtml(state.form.videoUrl)}" placeholder="https://..." />
-              </label>
-              <label class="field field--full">
-                <span>视频标题</span>
-                <input id="video-title" value="${escapeHtml(state.form.videoTitle)}" placeholder="可留空，支持从视频网址自动读取" />
-              </label>
-              <label class="field field--full">
-                <span>视频简介</span>
-                <textarea id="video-description" placeholder="可留空，支持从视频网址自动读取">${escapeHtml(state.form.videoDescription)}</textarea>
-              </label>
-              <label class="field">
-                <span>题目 ID / slug</span>
-                <input id="draft-id" value="${escapeHtml(state.draft.id)}" />
-              </label>
-              <label class="field">
-                <span>题目标题</span>
-                <input id="draft-title" value="${escapeHtml(state.draft.title)}" />
-              </label>
-            </div>
-            <div class="actions">
-              <button class="secondary" type="button" id="parse-video-btn" ${state.busy ? 'disabled' : ''}>${state.busy && state.busyLabel.includes('解析视频') ? '解析中...' : '解析视频信息'}</button>
-              <button class="primary" type="button" id="extract-btn" ${state.busy ? 'disabled' : ''}>${state.busy && state.busyLabel.includes('音频') ? '提取中...' : '提取整段音频'}</button>
-            </div>
-          </article>
-
-          <article class="studio-card">
-            <p class="eyebrow">步骤二</p>
-            <h2>大模型校对与基础字段</h2>
-            <div class="form-grid">
-              <label class="field field--full">
-                <span>提示词</span>
-                <textarea id="ai-prompt" class="prompt-textarea" placeholder="点击下方按钮自动生成给大模型的提示词">${escapeHtml(state.form.aiPrompt)}</textarea>
-              </label>
-              <label class="field field--full">
-                <span>大模型返回结果</span>
-                <textarea id="ai-response" class="prompt-textarea" placeholder='把大模型返回的 JSON 直接粘贴到这里'>${escapeHtml(state.form.aiResponse)}</textarea>
-              </label>
-              <label class="field">
-                <span>赛道名</span>
-                <input id="draft-track-name" value="${escapeHtml(state.draft.trackName)}" />
-              </label>
-              <label class="field">
-                <span>国家</span>
-                <input id="draft-track-country" value="${escapeHtml(state.draft.trackCountry)}" />
-              </label>
-              <label class="field">
-                <span>车手名</span>
-                <input id="draft-driver-name" value="${escapeHtml(state.draft.driverName)}" />
-              </label>
-              <label class="field">
-                <span>车手号码</span>
-                <input id="draft-driver-number" value="${escapeHtml(state.draft.driverNumber)}" />
-              </label>
-              <label class="field">
-                <span>年份</span>
-                <input id="year" value="${escapeHtml(state.form.year)}" />
-              </label>
-              <label class="field">
-                <span>场次名称</span>
-                <input id="session-name" value="${escapeHtml(state.form.sessionName)}" />
-              </label>
-            </div>
-            <div class="actions">
-              <button class="secondary" type="button" id="generate-prompt-btn" ${state.busy ? 'disabled' : ''}>生成提示词</button>
-              <button class="secondary" type="button" id="copy-prompt-btn" ${state.busy ? 'disabled' : ''}>复制提示词</button>
-              <button class="primary" type="button" id="apply-ai-btn" ${state.busy ? 'disabled' : ''}>应用返回结果</button>
-            </div>
-          </article>
-
-          <article class="studio-card">
-            <p class="eyebrow">步骤三</p>
-            <h2>赛道 SVG 与遥测数据</h2>
-            <div class="form-grid">
-              <label class="field">
-                <span>赛道 SVG 文件名</span>
-                <input id="track-asset" value="${escapeHtml(state.form.trackAsset || state.draft.id || 'track-asset')}" />
-              </label>
-              <label class="field">
-                <span>本地检索关键词</span>
-                <input id="track-query" value="${escapeHtml(state.form.trackQuery || state.draft.trackName)}" placeholder="Red Bull Ring / Spielberg / A1-Ring" />
-              </label>
-              <label class="field">
-                <span>场次 Key</span>
-                <input id="session-key" value="${escapeHtml(state.form.sessionKey)}" placeholder="9951" />
-              </label>
-              <label class="field">
-                <span>圈数</span>
-                <input id="lap-number" value="${escapeHtml(state.form.lapNumber)}" placeholder="${lapStats.fastestLap ? `默认最快圈 ${lapStats.fastestLap.lap_number}` : '留空则自动选最快圈'}" ${lapStats.maxLapNumber ? `max="${escapeHtml(lapStats.maxLapNumber)}"` : ''} />
-              </label>
-              <label class="field field--full">
-                <span>圈速策略</span>
-                <div class="inline-note">
-                  ${lapStats.fastestLap
-                    ? `当前已识别有效圈 ${state.laps.length} 条，最快圈为第 ${escapeHtml(lapStats.fastestLap.lap_number)} 圈 (${escapeHtml(lapStats.fastestLap.lap_duration)} 秒)，可手动改到 1-${escapeHtml(lapStats.maxLapNumber)}。`
-                    : '若圈数留空，导入遥测时会自动查询该车手所有有效圈并默认选择最快单圈。'}
-                </div>
-              </label>
-            </div>
-            <div class="actions">
-              <button class="secondary" type="button" id="track-btn" ${state.busy ? 'disabled' : ''}>添加地图</button>
-              <button class="primary" type="button" id="telemetry-btn" ${state.busy ? 'disabled' : ''}>导入遥测数据</button>
-            </div>
-            <div class="result-stack">
-              ${renderTrackPreview()}
-              ${renderTurn1CropSection()}
-            </div>
-          </article>
-
-          <article class="studio-card">
-            <p class="eyebrow">草稿预览</p>
-            <h2>当前题目 JSON</h2>
-            <textarea class="preview-json" readonly>${JSON.stringify(state.draft, null, 2)}</textarea>
-          </article>
-        </section>
-      </section>
-    </main>
-  `;
-
-  bindEvents();
-}
-
 async function runAction(message, fn) {
   syncAllFromForm();
   state.busy = true;
@@ -955,225 +265,32 @@ async function runAction(message, fn) {
   render();
 }
 
-function syncDraftJsonPreview() {
-  const preview = document.querySelector('.preview-json');
-  if (preview) {
-    preview.value = JSON.stringify(state.draft, null, 2);
-  }
-}
-
-function applyTurn1CropDom(crop, bounds = state.cropAsset.bounds) {
-  const nextCrop = setDraftTurn1Crop(bounds, crop);
-  const maskTop = document.querySelector('#turn1-mask-top');
-  const maskLeft = document.querySelector('#turn1-mask-left');
-  const maskRight = document.querySelector('#turn1-mask-right');
-  const maskBottom = document.querySelector('#turn1-mask-bottom');
-  const frame = document.querySelector('#turn1-crop-rect');
-  const dragSurface = document.querySelector('#turn1-crop-drag-surface');
-  const previewSvg = document.querySelector('#turn1-crop-preview-svg');
-
-  if (maskTop) {
-    maskTop.setAttribute('x', String(bounds.x));
-    maskTop.setAttribute('y', String(bounds.y));
-    maskTop.setAttribute('width', String(bounds.width));
-    maskTop.setAttribute('height', String(Math.max(nextCrop.y - bounds.y, 0)));
-  }
-
-  if (maskLeft) {
-    maskLeft.setAttribute('x', String(bounds.x));
-    maskLeft.setAttribute('y', String(nextCrop.y));
-    maskLeft.setAttribute('width', String(Math.max(nextCrop.x - bounds.x, 0)));
-    maskLeft.setAttribute('height', String(nextCrop.height));
-  }
-
-  if (maskRight) {
-    maskRight.setAttribute('x', String(nextCrop.x + nextCrop.width));
-    maskRight.setAttribute('y', String(nextCrop.y));
-    maskRight.setAttribute('width', String(Math.max(bounds.x + bounds.width - (nextCrop.x + nextCrop.width), 0)));
-    maskRight.setAttribute('height', String(nextCrop.height));
-  }
-
-  if (maskBottom) {
-    maskBottom.setAttribute('x', String(bounds.x));
-    maskBottom.setAttribute('y', String(nextCrop.y + nextCrop.height));
-    maskBottom.setAttribute('width', String(bounds.width));
-    maskBottom.setAttribute('height', String(Math.max(bounds.y + bounds.height - (nextCrop.y + nextCrop.height), 0)));
-  }
-
-  if (frame) {
-    frame.setAttribute('x', String(nextCrop.x));
-    frame.setAttribute('y', String(nextCrop.y));
-    frame.setAttribute('width', String(nextCrop.width));
-    frame.setAttribute('height', String(nextCrop.height));
-    frame.setAttribute('rx', String(Math.min(nextCrop.width, nextCrop.height) * 0.04));
-    frame.setAttribute('ry', String(Math.min(nextCrop.width, nextCrop.height) * 0.04));
-  }
-
-  if (dragSurface) {
-    dragSurface.setAttribute('x', String(nextCrop.x));
-    dragSurface.setAttribute('y', String(nextCrop.y));
-    dragSurface.setAttribute('width', String(nextCrop.width));
-    dragSurface.setAttribute('height', String(nextCrop.height));
-  }
-
-  document.querySelectorAll('[data-crop-handle]').forEach((handle) => {
-    const key = handle.getAttribute('data-crop-handle');
-    const x = key === 'ne' || key === 'se' ? nextCrop.x + nextCrop.width : nextCrop.x;
-    const y = key === 'sw' || key === 'se' ? nextCrop.y + nextCrop.height : nextCrop.y;
-    handle.setAttribute('cx', String(x));
-    handle.setAttribute('cy', String(y));
-    handle.setAttribute('r', String(Math.max(Math.min(nextCrop.width, nextCrop.height) * 0.028, 8)));
-  });
-
-  if (previewSvg) {
-    previewSvg.setAttribute('viewBox', `${roundCropValue(nextCrop.x)} ${roundCropValue(nextCrop.y)} ${roundCropValue(nextCrop.width)} ${roundCropValue(nextCrop.height)}`);
-  }
-
-  document.querySelector('[data-turn1-stat="ratio"]')?.replaceChildren(document.createTextNode(nextCrop.aspectRatio));
-  document.querySelector('[data-turn1-stat="x"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.x)));
-  document.querySelector('[data-turn1-stat="y"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.y)));
-  document.querySelector('[data-turn1-stat="width"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.width)));
-  document.querySelector('[data-turn1-stat="height"]')?.replaceChildren(document.createTextNode(roundCropValue(nextCrop.height)));
-
-  syncDraftJsonPreview();
-}
-
-function getSvgPointer(svg, event) {
-  const matrix = svg.getScreenCTM();
-  if (!matrix) {
-    return { x: 0, y: 0 };
-  }
-
-  const point = new DOMPoint(event.clientX, event.clientY);
-  const localPoint = point.matrixTransform(matrix.inverse());
-  return {
-    x: localPoint.x,
-    y: localPoint.y
-  };
-}
-
-function bindTurn1CropEditor() {
-  if (!state.draft.trackSvgSrc) {
-    resetCropAssetState();
-    return;
-  }
-
-  if (state.cropAsset.svgSrc !== state.draft.trackSvgSrc) {
-    if (state.cropAsset.status !== 'loading') {
-      loadTrackSvgMarkup(state.draft.trackSvgSrc);
-    }
-    return;
-  }
-
-  if (state.cropAsset.status !== 'ready') {
-    return;
-  }
-
-  const svg = document.querySelector('#turn1-crop-editor');
-  if (!svg) {
-    return;
-  }
-
-  applyTurn1CropDom(state.draft.turn1Crop, state.cropAsset.bounds);
-
-  document.querySelectorAll('[data-turn1-ratio]').forEach((button) => {
-    button.addEventListener('click', () => {
-      state.draft.turn1Crop = withTurn1AspectRatio(state.draft.turn1Crop, button.getAttribute('data-turn1-ratio'), state.cropAsset.bounds);
-      render();
-    });
-  });
-
-  document.querySelectorAll('[data-turn1-nudge]').forEach((button) => {
-    button.addEventListener('click', () => {
-      state.draft.turn1Crop = nudgeTurn1Crop(
-        state.draft.turn1Crop,
-        button.getAttribute('data-turn1-nudge'),
-        state.cropAsset.bounds
-      );
-      render();
-    });
-  });
-
-  document.querySelectorAll('[data-turn1-scale]').forEach((button) => {
-    button.addEventListener('click', () => {
-      state.draft.turn1Crop = scaleTurn1Crop(
-        state.draft.turn1Crop,
-        button.getAttribute('data-turn1-scale') === 'up' ? 1.08 : 0.92,
-        state.cropAsset.bounds
-      );
-      render();
-    });
-  });
-
-  document.querySelector('#turn1-reset-btn')?.addEventListener('click', () => {
-    state.draft.turn1Crop = buildDefaultTurn1Crop(state.cropAsset.bounds, state.draft.turn1Crop?.aspectRatio);
-    render();
-  });
-
-  const startPointerInteraction = (event, interaction) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const startPointer = getSvgPointer(svg, event);
-    const startCrop = setDraftTurn1Crop(state.cropAsset.bounds);
-    state.cropInteraction = {
-      pointerId: event.pointerId,
-      type: interaction.type,
-      handle: interaction.handle || '',
-      startPointer,
-      startCrop
-    };
-
-    svg.setPointerCapture(event.pointerId);
-
-    const onPointerMove = (moveEvent) => {
-      if (!state.cropInteraction || moveEvent.pointerId !== state.cropInteraction.pointerId) {
-        return;
-      }
-
-      const pointer = getSvgPointer(svg, moveEvent);
-      const deltaX = pointer.x - state.cropInteraction.startPointer.x;
-      const deltaY = pointer.y - state.cropInteraction.startPointer.y;
-      const nextCrop = state.cropInteraction.type === 'move'
-        ? moveTurn1Crop(state.cropInteraction.startCrop, deltaX, deltaY, state.cropAsset.bounds)
-        : resizeTurn1Crop(state.cropInteraction.startCrop, state.cropInteraction.handle, pointer, state.cropAsset.bounds);
-
-      applyTurn1CropDom(nextCrop, state.cropAsset.bounds);
-    };
-
-    const finishInteraction = (finishEvent) => {
-      if (!state.cropInteraction || finishEvent.pointerId !== state.cropInteraction.pointerId) {
-        return;
-      }
-
-      svg.removeEventListener('pointermove', onPointerMove);
-      svg.removeEventListener('pointerup', finishInteraction);
-      svg.removeEventListener('pointercancel', finishInteraction);
-      svg.releasePointerCapture(finishEvent.pointerId);
-      state.cropInteraction = null;
-    };
-
-    svg.addEventListener('pointermove', onPointerMove);
-    svg.addEventListener('pointerup', finishInteraction);
-    svg.addEventListener('pointercancel', finishInteraction);
-  };
-
-  document.querySelector('#turn1-crop-drag-surface')?.addEventListener('pointerdown', (event) => {
-    startPointerInteraction(event, { type: 'move' });
-  });
-
-  document.querySelectorAll('[data-crop-handle]').forEach((handle) => {
-    handle.addEventListener('pointerdown', (event) => {
-      startPointerInteraction(event, {
-        type: 'resize',
-        handle: handle.getAttribute('data-crop-handle')
-      });
-    });
-  });
-}
-
 function bindEvents() {
-  bindTurn1CropEditor();
+  bindTurn1CropEditor({
+    state,
+    render,
+    createTurn1CropAssetState,
+    setDraftTurn1Crop,
+    onSaveCrop: () => {
+      if (state.busy) {
+        return;
+      }
+
+      runAction('正在保存 Turn 1 裁剪...', async () => {
+        syncAllFromForm();
+        requireValue(state.draft.id, '保存前请先填写题目 ID / slug。');
+        requireValue(state.draft.title, '保存前请先填写题目标题。');
+        await request('/api/studio/challenges', {
+          method: 'POST',
+          body: JSON.stringify(state.draft)
+        });
+        await loadLibrary();
+        state.selectedId = state.draft.id;
+        setStatus(`Turn 1 裁剪已保存：${state.draft.title || state.draft.id}`, 'success');
+        pushActivity(`Turn 1 裁剪已保存：${state.draft.id}`, 'success');
+      });
+    }
+  });
 
   ['#library-search', '#category-filter', '#status-filter', '#library-sort'].forEach((selector) => {
     document.querySelector(selector)?.addEventListener('input', () => {
@@ -1188,12 +305,13 @@ function bindEvents() {
 
   document.querySelector('#new-btn')?.addEventListener('click', () => {
     state.selectedId = '';
-    state.draft = emptyDraft();
+    state.draft = createEmptyStudioDraft();
     state.form = {
       ...state.form,
-      ...defaultFormState(),
+      ...createDefaultStudioFormState(),
       trackAsset: ''
     };
+    state.cropAsset = createTurn1CropAssetState();
     state.sessions = [];
     state.laps = [];
     setStatus('已创建新的空白草稿。', 'success');
@@ -1434,7 +552,7 @@ function bindEvents() {
       });
       await loadLibrary();
       state.selectedId = state.challenges[0]?.id ?? '';
-      state.draft = state.challenges[0] ? structuredClone(state.challenges[0]) : emptyDraft();
+      state.draft = state.challenges[0] ? structuredClone(state.challenges[0]) : createEmptyStudioDraft();
       state.form.trackAsset = state.draft.id;
       setStatus('题目已删除。', 'success');
       pushActivity('题目已删除。', 'success');
@@ -1452,6 +570,7 @@ function bindEvents() {
           query: state.form.trackQuery || state.draft.trackName
         })
       });
+      state.draft.turn1Crop = null;
       state.draft.trackSvgSrc = payload.trackSvgSrc;
       state.draft.trackVectorSource = `F1DB white-outline 赛道 SVG · ${payload.circuitName} · ${payload.layoutId}`;
       setStatus(`已匹配并导入赛道图：${payload.circuitName} (${payload.layoutId})。下方预览已更新。`, 'success');
@@ -1474,7 +593,7 @@ function bindEvents() {
 
       const selectedLap = laps.find((lap) => String(lap.lap_number) === String(selectedLapNumber));
       if (!selectedLap) {
-        throw new Error(`第 ${selectedLapNumber} 圈不在当前有效圈范围内，请改为 1-${getLapStats().maxLapNumber}。`);
+        throw new Error(`第 ${selectedLapNumber} 圈不在当前有效圈范围内，请改为 1-${getLapStats(state.laps).maxLapNumber}。`);
       }
 
       state.form.lapNumber = selectedLapNumber;
