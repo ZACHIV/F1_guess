@@ -152,7 +152,7 @@ export default function Turn1App() {
           </p>
         </div>
         <div className="turn1-header__actions">
-          <a className="turn1-link" href="/archive.html">Back to archive</a>
+          <a className="turn1-link" href="/">Back to gallery</a>
           <button className="turn1-link turn1-link--button" type="button" onClick={handleNextTrack}>Next corner</button>
         </div>
       </header>

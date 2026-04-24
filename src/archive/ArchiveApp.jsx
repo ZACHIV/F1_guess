@@ -31,9 +31,9 @@ export default function ArchiveApp() {
 
   const layout = useMemo(() => {
     const compact = stageWidth < MOBILE_BREAKPOINT;
-    const cardWidth = compact ? 146 : 184;
-    const cardHeight = compact ? 200 : 262;
-    const gap = compact ? 18 : 24;
+    const cardWidth = compact ? 172 : 228;
+    const cardHeight = compact ? 236 : 318;
+    const gap = compact ? 22 : 30;
 
     return {
       compact,
@@ -41,7 +41,7 @@ export default function ArchiveApp() {
       cardHeight,
       gap,
       span: cardWidth + gap,
-      speed: compact ? 18 : 28
+      speed: compact ? 16 : 24
     };
   }, [stageWidth]);
 
@@ -210,79 +210,102 @@ export default function ArchiveApp() {
 
   return (
     <main className="archive-page">
-      <header className="archive-header">
-        <div className="archive-header__masthead">
-          <p className="archive-header__eyebrow">PADDOCK ARCHIVE</p>
-          <p className="archive-header__subcopy">Formula One circuit selection</p>
-        </div>
-        <div className="archive-header__issue">
-          <span>Issue 01</span>
-          <span>Curated selection</span>
-        </div>
-      </header>
+      <div className="archive-hover-zone" aria-hidden="true" />
 
-      <section className="archive-intro">
-        <div className="archive-intro__copy">
-          <p className="archive-intro__kicker">Continuous race ambience</p>
-          <h1>Circuit Noise Archive</h1>
-          <p className="archive-intro__lede">
-            A curated listening gallery built from 2025 qualifying onboard recordings, re-cut into
-            looping ambient studies so each circuit reads like a place, not just a lap.
-          </p>
-        </div>
-        <aside className="archive-intro__panel">
-          <div className="archive-intro__stats">
-            <div>
-              <strong>{archiveStats.circuits}</strong>
-              <span>Circuits</span>
-            </div>
-            <div>
-              <strong>{archiveStats.countries}</strong>
-              <span>Countries</span>
-            </div>
-            <div>
-              <strong>{archiveStats.playable}</strong>
-              <span>Audio studies</span>
-            </div>
-          </div>
-          <p className="archive-intro__note">
-            Inspired by white-noise interfaces that start instantly and gallery sites that invite
-            wandering, not menu-diving.
-          </p>
-          <div className="archive-intro__actions">
-            <button
-              type="button"
-              className="archive-intro__jump"
-              aria-label="Jump into the archive"
-              onClick={jumpIntoArchive}
-            >
-              Jump in
-            </button>
-            <a
-              className="archive-intro__turn1"
-              href="/turn1.html"
-              aria-label="Enter the Turn 1 desk test"
-            >
-              <span>Mini game</span>
-              <strong>Turn 1 desk test</strong>
-              <em>Guess the circuit from its opening corner.</em>
-            </a>
-          </div>
-        </aside>
-      </section>
-
-      <div className="archive-filters" role="toolbar" aria-label="Archive curation filters">
-        {ARCHIVE_THEMES.map((theme) => (
-          <button
-            key={theme.id}
-            type="button"
-            className={`archive-filter${activeTheme === theme.id ? ' is-active' : ''}`}
-            onClick={() => setActiveTheme(theme.id)}
-          >
-            {theme.label}
-          </button>
-        ))}
+      <div className="archive-title-lockup">
+        <h1>Circuit Noise Archive</h1>
       </div>
+
+      <section className="archive-top-drawer" aria-label="Archive controls">
+        <div className="archive-top-drawer__hint">
+          <span>Hover near the top edge</span>
+          <strong>Open archive controls</strong>
+        </div>
+
+        <div className="archive-top-drawer__content">
+          <header className="archive-header">
+            <div className="archive-header__masthead">
+              <p className="archive-header__eyebrow">PADDOCK ARCHIVE</p>
+              <p className="archive-header__subcopy">Formula One circuit selection</p>
+            </div>
+            <div className="archive-header__issue">
+              <span>Issue 01</span>
+              <span>Curated selection</span>
+            </div>
+          </header>
+
+          <section className="archive-intro">
+            <div className="archive-intro__copy">
+              <p className="archive-intro__kicker">Continuous race ambience</p>
+              <p className="archive-intro__lede">
+                A curated listening gallery built from 2025 qualifying onboard recordings,
+                re-cut into looping ambient studies so each circuit reads like a place, not just a lap.
+              </p>
+            </div>
+            <aside className="archive-intro__panel">
+              <div className="archive-intro__stats">
+                <div>
+                  <strong>{archiveStats.circuits}</strong>
+                  <span>Circuits</span>
+                </div>
+                <div>
+                  <strong>{archiveStats.countries}</strong>
+                  <span>Countries</span>
+                </div>
+                <div>
+                  <strong>{archiveStats.playable}</strong>
+                  <span>Audio studies</span>
+                </div>
+              </div>
+              <p className="archive-intro__note">
+                Inspired by white-noise interfaces that start instantly and gallery sites that invite
+                wandering, not menu-diving.
+              </p>
+              <div className="archive-intro__actions">
+                <button
+                  type="button"
+                  className="archive-intro__jump"
+                  aria-label="Jump into the archive"
+                  onClick={jumpIntoArchive}
+                >
+                  Jump in
+                </button>
+                <a
+                  className="archive-intro__experience archive-intro__experience--guess"
+                  href="/guess.html"
+                  aria-label="Enter the sound guess game"
+                >
+                  <span>Signature game</span>
+                  <strong>Sound Guess</strong>
+                  <em>Listen to an onboard clip and name the circuit.</em>
+                </a>
+                <a
+                  className="archive-intro__experience archive-intro__experience--turn1"
+                  href="/turn1.html"
+                  aria-label="Enter the Turn 1 desk test"
+                >
+                  <span>Mini game</span>
+                  <strong>Turn 1 desk test</strong>
+                  <em>Guess the circuit from its opening corner.</em>
+                </a>
+              </div>
+            </aside>
+          </section>
+
+          <div className="archive-filters" role="toolbar" aria-label="Archive curation filters">
+            {ARCHIVE_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                type="button"
+                className={`archive-filter${activeTheme === theme.id ? ' is-active' : ''}`}
+                onClick={() => setActiveTheme(theme.id)}
+              >
+                {theme.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section
         ref={stageRef}
@@ -463,13 +486,22 @@ export default function ArchiveApp() {
                     <dd>{selectedTrack.firstGrandPrix}</dd>
                   </div>
                 </dl>
-                <a
-                  className="archive-detail__turn1-link"
-                  href={`/turn1.html?track=${selectedTrack.id}`}
-                  aria-label={`Enter ${selectedTrack.circuit} Turn 1 desk test`}
-                >
-                  Enter the Turn 1 desk test
-                </a>
+                <div className="archive-detail__actions">
+                  <a
+                    className="archive-detail__experience-link"
+                    href={`/guess.html?track=${selectedTrack.id}`}
+                    aria-label={`Enter ${selectedTrack.circuit} sound guess game`}
+                  >
+                    Play the sound guess
+                  </a>
+                  <a
+                    className="archive-detail__experience-link"
+                    href={`/turn1.html?track=${selectedTrack.id}`}
+                    aria-label={`Enter ${selectedTrack.circuit} Turn 1 desk test`}
+                  >
+                    Enter the Turn 1 desk test
+                  </a>
+                </div>
               </div>
 
               <button

@@ -205,14 +205,24 @@ function getMarketingSnapshotConfig() {
   return MARKETING_SNAPSHOT_PRESETS[snapshotKey] ?? null;
 }
 
+function getInitialTrackIdFromUrl() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return new URLSearchParams(window.location.search).get('track') ?? '';
+}
+
 export default function App({ initialLibrary }) {
   const marketingSnapshot = useMemo(() => getMarketingSnapshotConfig(), []);
+  const initialTrackId = useMemo(() => getInitialTrackIdFromUrl(), []);
   const marketingSnapshotAppliedRef = useRef(false);
   const resultAudioCleanupRef = useRef(() => {});
   const [locale, setLocale] = useState(detectInitialLocale);
   const [library, setLibrary] = useState(() => getPlayableChallenges(initialLibrary ?? fallbackChallenges));
   const [selectedChallengeId, setSelectedChallengeId] = useState(() =>
     marketingSnapshot?.challengeId
+      ?? initialTrackId
       ?? pickRandomChallenge(getPlayableChallenges(initialLibrary ?? fallbackChallenges))?.id
       ?? ''
   );
@@ -262,6 +272,10 @@ export default function App({ initialLibrary }) {
           return currentId;
         }
 
+        if (initialTrackId && playable.some((entry) => entry.id === initialTrackId)) {
+          return initialTrackId;
+        }
+
         return pickRandomChallenge(playable)?.id ?? '';
       });
     });
@@ -269,7 +283,7 @@ export default function App({ initialLibrary }) {
     return () => {
       cancelled = true;
     };
-  }, [initialLibrary]);
+  }, [initialLibrary, initialTrackId]);
 
   const challenge = useMemo(
     () => library.find((item) => item.id === selectedChallengeId) ?? library[0] ?? null,
@@ -593,6 +607,7 @@ export default function App({ initialLibrary }) {
           canMuteAnthem={canMuteAnthem && !anthemMuted}
           challenge={challenge}
           dimensions={TRACK_DIMENSIONS}
+          galleryHref="/"
           locale={locale}
           marker={marker}
           onLocaleChange={setLocale}
@@ -620,6 +635,12 @@ export default function App({ initialLibrary }) {
         onTimeUpdate={setCurrentTime}
       />
       <PosterStage challenge={challenge} result={result} runState={runState}>
+        <a
+          className="absolute left-4 top-4 z-8 rounded-full border border-white/14 bg-black/22 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.22em] text-white/72 backdrop-blur-xl transition hover:bg-black/34 hover:text-white sm:left-5 sm:top-5"
+          href="/"
+        >
+          Back to gallery
+        </a>
         <div className="duel-stage__language-switch">
           <LocalePicker locale={locale} onChange={setLocale} />
         </div>

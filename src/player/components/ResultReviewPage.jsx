@@ -13,6 +13,7 @@ export default function ResultReviewPage({
   canMuteAnthem = false,
   challenge,
   dimensions,
+  galleryHref = '/',
   marker,
   onNextChallenge,
   onMuteAnthem,
@@ -39,7 +40,13 @@ export default function ResultReviewPage({
       data-testid="result-review-page"
     >
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-6 sm:px-8 lg:px-10">
-        <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-4">
+          <a
+            className="rounded-full border border-white/14 bg-white/[0.04] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.22em] text-white/72 transition hover:bg-white/[0.08] hover:text-white"
+            href={galleryHref}
+          >
+            Back to gallery
+          </a>
           <LocalePicker locale={locale} onChange={onLocaleChange} />
         </div>
         <header className="result-review__hero rounded-[2rem] border border-white/10 bg-white/[0.04] px-6 py-6 backdrop-blur-xl">
