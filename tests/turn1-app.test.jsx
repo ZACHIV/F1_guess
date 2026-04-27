@@ -20,7 +20,7 @@ describe('Turn1App', () => {
     render(<Turn1App />);
 
     expect(screen.getByRole('heading', { name: /turn 1 desk test/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /back to archive/i })).toHaveAttribute('href', '/archive.html');
+    expect(screen.getByRole('link', { name: /back to gallery/i })).toHaveAttribute('href', '/');
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /next corner/i })).toBeInTheDocument();

@@ -20,7 +20,10 @@ export default function TimerRing({ currentTime, durationMs }) {
         }}
       >
         <div className="poster-timer__inner">
-          <strong>{formatPosterClock(currentTime)}</strong>
+          <div className="poster-timer__text">
+            <span>clock</span>
+            <strong>{formatPosterClock(currentTime)}</strong>
+          </div>
         </div>
       </div>
     </div>

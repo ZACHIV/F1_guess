@@ -8,11 +8,11 @@ export default function LocalePicker({ locale, onChange }) {
   const normalizedLocale = normalizeLocale(locale);
 
   return (
-    <label className="inline-flex items-center rounded-full border border-white/20 bg-black/24 px-3 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36">
+    <label className="inline-flex items-center rounded-full border border-[rgba(244,233,226,0.16)] bg-black/24 px-3 py-2 text-xs font-medium text-white/88 backdrop-blur-xl transition hover:bg-black/36">
       <span className="sr-only">Language</span>
       <select
         aria-label="Language"
-        className="bg-transparent pr-5 text-xs font-medium text-white outline-none"
+        className="bg-transparent pr-5 text-xs font-medium uppercase tracking-[0.16em] text-white outline-none"
         onChange={(event) => onChange?.(normalizeLocale(event.target.value))}
         value={normalizedLocale}
       >

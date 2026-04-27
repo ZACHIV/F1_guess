@@ -31,6 +31,100 @@ const localToolDir = resolve(root, '.tools/bin');
 const assetStorage = createAssetStorage();
 const isVercelRuntime = Boolean(process.env.VERCEL);
 
+const SLUG_RE = /^[a-zA-Z0-9_-]+$/;
+const MAX_SLUG_LENGTH = 128;
+
+function validateSlug(value, label = 'slug') {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${label} is required`);
+  }
+
+  if (value.length > MAX_SLUG_LENGTH) {
+    throw new Error(`${label} must be at most ${MAX_SLUG_LENGTH} characters`);
+  }
+
+  if (!SLUG_RE.test(value)) {
+    throw new Error(`${label} must contain only letters, digits, hyphens and underscores`);
+  }
+}
+
+function validateUrl(value, label = 'url') {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${label} is required`);
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${label} must be a valid URL`);
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`${label} must use http or https`);
+  }
+}
+
+function validateAssetName(value, label = 'assetName') {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${label} is required`);
+  }
+
+  if (!SLUG_RE.test(value)) {
+    throw new Error(`${label} must contain only letters, digits, hyphens and underscores`);
+  }
+}
+
+const CHALLENGE_KNOWN_FIELDS = [
+  'id',
+  'audioSrc',
+  'audioWavSrc',
+  'trackSvgSrc',
+  'telemetryLocationSrc',
+  'telemetryCarDataSrc',
+  'title',
+  'trackName',
+  'trackCountry',
+  'driverName',
+  'driverNumber',
+  'posterSrc',
+  'category',
+  'durationLabel',
+  'clipDurationMs',
+  'tags',
+  'zhAliases',
+  'answerAliases',
+  'sortOrder',
+  'status',
+  'trackNotes',
+  'trackNotesImageSrc',
+  'description',
+  'createdAt',
+  'updatedAt'
+];
+
+function sanitizeChallengeRecord(record) {
+  if (typeof record !== 'object' || record === null || Array.isArray(record)) {
+    throw new Error('Challenge record must be an object');
+  }
+
+  const cleaned = {};
+  for (const key of Object.keys(record)) {
+    if (CHALLENGE_KNOWN_FIELDS.includes(key)) {
+      cleaned[key] = record[key];
+    }
+  }
+
+  if (!cleaned.id || typeof cleaned.id !== 'string') {
+    throw new Error('Challenge record must include a valid id');
+  }
+
+  // Sanitize slug-derived fields
+  validateSlug(cleaned.id, 'id');
+
+  return cleaned;
+}
+
 function resolveCommand(command) {
   const localCommand = resolve(localToolDir, command);
   return existsSync(localCommand) ? localCommand : command;
@@ -167,6 +261,8 @@ export function createApp() {
   try {
     requireLocalStudio('Audio extraction');
     const { slug, url } = request.body;
+    validateSlug(slug);
+    validateUrl(url);
     const paths = getWorkflowMediaPaths(slug);
 
     await ensureDir(resolve(root, '.tmp'));
@@ -211,6 +307,7 @@ export function createApp() {
     let sourceDescription = description;
 
     if (url) {
+      validateUrl(url);
       const command = buildVideoMetadataCommand({ url });
       const stdout = await runCommandWithOutput(command.command, command.args);
       const payload = JSON.parse(stdout);
@@ -239,6 +336,7 @@ export function createApp() {
   try {
     requireLocalStudio('Local f1db track import');
     const { assetName, query } = request.body;
+    validateAssetName(assetName);
     const targetDir = resolve(root, 'public/assets/tracks');
 
     await ensureDir(targetDir);
@@ -268,7 +366,7 @@ export function createApp() {
       country_name: request.query.countryName,
       session_name: request.query.sessionName
     });
-    response.json(result);
+    response.json({ ok: true, data: result });
   } catch (error) {
     next(error);
   }
@@ -279,7 +377,7 @@ export function createApp() {
     const result = await fetchOpenF1('/drivers', {
       session_key: request.query.sessionKey
     });
-    response.json(result);
+    response.json({ ok: true, data: result });
   } catch (error) {
     next(error);
   }
@@ -291,7 +389,7 @@ export function createApp() {
       session_key: request.query.sessionKey,
       driver_number: request.query.driverNumber
     });
-    response.json(result.filter((lap) => lap.lap_duration !== null));
+    response.json({ ok: true, data: result.filter((lap) => lap.lap_duration !== null) });
   } catch (error) {
     next(error);
   }
@@ -301,6 +399,7 @@ export function createApp() {
   try {
     requireLocalStudio('Telemetry import');
     const { slug, sessionKey, driverNumber, lapNumber } = request.body;
+    validateSlug(slug);
     const telemetryDir = resolve(root, 'public/telemetry');
     const laps = await fetchOpenF1('/laps', {
       session_key: sessionKey,
@@ -368,8 +467,9 @@ export function createApp() {
   app.post('/api/studio/challenges', async (request, response, next) => {
   try {
     requireLocalStudio('Challenge library writes');
+    const cleaned = sanitizeChallengeRecord(request.body);
     const existing = await readChallengeLibrary(challengeLibraryPath);
-    const updated = upsertChallengeRecord(existing, request.body);
+    const updated = upsertChallengeRecord(existing, cleaned);
 
     await writeChallengeLibrary(challengeLibraryPath, updated);
 

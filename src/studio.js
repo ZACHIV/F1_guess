@@ -206,9 +206,9 @@ async function resolveSessionKeyForTelemetry() {
   requireValue(state.draft.trackCountry, '请先填写国家，才能自动匹配场次。');
   requireValue(state.form.sessionName, '请先填写场次名称，才能自动匹配场次。');
 
-  const sessions = await request(
+  const sessions = (await request(
     `/api/studio/openf1/sessions?year=${encodeURIComponent(state.form.year)}&countryName=${encodeURIComponent(state.draft.trackCountry)}&sessionName=${encodeURIComponent(state.form.sessionName)}`
-  );
+  )).data ?? [];
 
   state.sessions = sessions;
 
@@ -228,8 +228,8 @@ async function resolveLapsForTelemetry() {
     `/api/studio/openf1/laps?sessionKey=${encodeURIComponent(sessionKey)}&driverNumber=${encodeURIComponent(state.draft.driverNumber)}`
   );
 
-  state.laps = Array.isArray(laps)
-    ? laps
+  state.laps = Array.isArray(laps?.data)
+    ? laps.data
         .filter((lap) => lap.lap_duration !== null)
         .sort((left, right) => Number(left.lap_number) - Number(right.lap_number))
     : [];

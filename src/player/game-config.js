@@ -17,15 +17,6 @@ export function formatScoreTime(ms) {
   return `${(Math.max(0, Number(ms ?? 0)) / 1000).toFixed(2)}s`;
 }
 
-export function formatClockTime(ms) {
-  const totalMs = Math.max(0, Number(ms ?? 0));
-  const totalSeconds = Math.floor(totalMs / 1000);
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-  const seconds = String(totalSeconds % 60).padStart(2, '0');
-  const centiseconds = String(Math.floor((totalMs % 1000) / 10)).padStart(2, '0');
-  return `${minutes}:${seconds}.${centiseconds}`;
-}
-
 export function getDuelChallenge(challenge) {
   if (!challenge) {
     return null;
@@ -46,10 +37,6 @@ export function getDuelChallenge(challenge) {
     benchmarkSource: duelEntry ? 'recorded' : 'estimated',
     benchmarkTrackLabel
   };
-}
-
-export function getDuelChallengeIds() {
-  return DUEL_POOL.map((entry) => entry.id);
 }
 
 function getEstimatedBenchmarkMs(challenge) {

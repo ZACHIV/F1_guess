@@ -29,7 +29,7 @@ describe('App', () => {
     expect(markup).toContain('data-testid="duel-audio"');
     expect(markup).toContain('data-testid="timer-ring"');
     expect(markup).toContain('data-testid="interaction-dock"');
-    expect(markup).toContain('duel-stage__hero duel-stage__hero--anchored');
+    expect(markup).toContain('duel-console--hero');
     expect(markup).toContain('/assets/max_with_earphone.jpeg');
     expect(markup).toContain('Can You Beat Max?');
     expect(markup).toContain('Start Duel');

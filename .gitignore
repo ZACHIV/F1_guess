@@ -6,3 +6,4 @@ data-cache/
 .next/
 .tools/
 .DS_Store
+.omx/

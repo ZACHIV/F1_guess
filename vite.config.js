@@ -9,7 +9,6 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         guess: fileURLToPath(new URL('./guess.html', import.meta.url)),
-        archive: fileURLToPath(new URL('./archive.html', import.meta.url)),
         turn1: fileURLToPath(new URL('./turn1.html', import.meta.url))
       }
     }

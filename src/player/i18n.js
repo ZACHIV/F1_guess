@@ -383,10 +383,6 @@ export function detectInitialLocale() {
   return 'en';
 }
 
-export function getLanguageBadge(locale) {
-  return getLocaleLabel(locale);
-}
-
 export function t(locale, key, variables = {}) {
   const normalizedLocale = normalizeLocale(locale);
   const template = MESSAGES[normalizedLocale]?.[key] ?? MESSAGES.en[key] ?? key;

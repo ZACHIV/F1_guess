@@ -10,7 +10,7 @@ export default function TelemetryStrip({ hudState }) {
     <section className="grid grid-cols-2 gap-3">
       {ITEMS.map(([label, key, suffix]) => (
         <article
-          className="glass-panel rounded-[24px] border border-white/12 px-4 py-3"
+          className="glass-panel rounded-[24px] border border-[rgba(244,233,226,0.12)] bg-[linear-gradient(180deg,rgba(26,17,17,0.84),rgba(15,11,11,0.72))] px-4 py-3"
           key={key}
         >
           <p className="hud-label">debrief {label}</p>

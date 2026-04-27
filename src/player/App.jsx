@@ -25,6 +25,7 @@ import ResultReviewPage from './components/ResultReviewPage.jsx';
 import TimerRing from './components/TimerRing.jsx';
 import InteractionDock from './components/InteractionDock.jsx';
 import LocalePicker from './components/LocalePicker.jsx';
+import TelemetryStrip from './components/TelemetryStrip.jsx';
 import {
   detectInitialLocale,
   getLocalizedAnswerLabel,
@@ -211,6 +212,18 @@ function getInitialTrackIdFromUrl() {
   }
 
   return new URLSearchParams(window.location.search).get('track') ?? '';
+}
+
+function getHeroTitleLines(locale) {
+  if (locale === 'zh-Hans') {
+    return ['你能战', '胜 Max', '吗？'];
+  }
+
+  if (locale === 'zh-Hant') {
+    return ['你能戰', '勝 Max', '嗎？'];
+  }
+
+  return [t(locale, 'heroTitle')];
 }
 
 export default function App({ initialLibrary }) {
@@ -435,6 +448,8 @@ export default function App({ initialLibrary }) {
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
   const displayElapsedMs = result?.playerTimeMs ?? sessionElapsedMs;
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
+  const heroLines = getHeroTitleLines(locale);
+  const heroIsCjk = locale === 'zh-Hans' || locale === 'zh-Hant';
 
   const playFromStart = useEffectEvent(async () => {
     if (!audioPlayer) {
@@ -634,57 +649,136 @@ export default function App({ initialLibrary }) {
         onReady={setAudioPlayer}
         onTimeUpdate={setCurrentTime}
       />
-      <PosterStage challenge={challenge} result={result} runState={runState}>
-        <a
-          className="absolute left-4 top-4 z-8 rounded-full border border-white/14 bg-black/22 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.22em] text-white/72 backdrop-blur-xl transition hover:bg-black/34 hover:text-white sm:left-5 sm:top-5"
-          href="/"
-        >
-          Back to gallery
-        </a>
-        <div className="duel-stage__language-switch">
-          <LocalePicker locale={locale} onChange={setLocale} />
-        </div>
-
-        <div className="relative flex flex-1 flex-col justify-between px-5 pb-8 pt-5 sm:px-7 sm:pb-10">
-          <section className="duel-stage__hero duel-stage__hero--anchored pointer-events-none px-1">
-            <h1 className="duel-stage__hero-title hero-display">{t(locale, 'heroTitle')}</h1>
-          </section>
-
-          <div className="duel-stage__control-cluster">
-            <InteractionDock
-              answerValue={answerValue}
-              canStart={Boolean(audioPlayer)}
-              canResume={canResume}
-              isPlaying={isPlaying}
-              onAnswerChange={(value) => {
-                setAnswerValue(value);
-                if (submitState === 'error') {
-                  setSubmitState('idle');
-                }
-              }}
-              onReplay={handleReplayLive}
-              onAnswerSubmit={handleAnswerSubmit}
-              onStart={handleStart}
-              onSurrender={handleSurrender}
-              onTogglePlayback={handleTogglePlayback}
-              runState={runState}
-              submitState={submitState}
-              locale={locale}
-              timer={(
-                <TimerRing
-                  benchmarkMs={currentBenchmarkMs}
-                  currentTime={displayElapsedMs}
-                  durationMs={MAX_GUESS_MS}
-                  result={result}
-                  runState={runState}
-                />
-              )}
-            />
+      <PosterStage>
+        <div className="duel-stage__topbar">
+          <div className="duel-stage__brand-block">
+            <span className="duel-stage__brand">F1.GUESS</span>
+            <span className="duel-stage__sys">sys.online // op.ready</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              className="rounded-full border border-[rgba(244,233,226,0.14)] bg-black/22 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.22em] text-white/72 backdrop-blur-xl transition hover:bg-black/34 hover:text-white"
+              href="/"
+            >
+              Back to gallery
+            </a>
+            <LocalePicker locale={locale} onChange={setLocale} />
           </div>
         </div>
 
+        <div className="duel-stage__layout">
+          <section className="duel-console duel-console--hero">
+            <p className="duel-console__eyebrow">for operators, not spectators</p>
+            <h1 className={`duel-stage__hero-title ${heroIsCjk ? 'duel-stage__hero-title--cjk' : 'hero-display'}`}>
+              {heroLines.map((line) => (
+                <span className="duel-stage__hero-line" key={line}>{line}</span>
+              ))}
+            </h1>
+            <p className="duel-stage__lede">{t(locale, 'idleHelper')}</p>
+
+            <div className="duel-stage__hero-meta">
+              <div className="duel-console__chip">
+                <span>driver</span>
+                <strong>{challenge.driverName} #{challenge.driverNumber || '00'}</strong>
+              </div>
+              <div className="duel-console__chip">
+                <span>clip</span>
+                <strong>{challenge.durationLabel || '00:00'}</strong>
+              </div>
+              <div className="duel-console__chip">
+                <span>benchmark</span>
+                <strong>{formatScoreTime(currentBenchmarkMs)}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="duel-console duel-console--focus">
+            <div className="duel-stage__focus-header">
+              <div>
+                <p className="hud-label">unknown circuit loaded</p>
+                <h2 className="duel-stage__focus-title">{challenge.category || 'Race Pole Onboard'}</h2>
+              </div>
+              <span className="duel-stage__focus-state">
+                {runState === 'live' ? 'listening' : runState === 'idle' ? 'standby' : 'sealed'}
+              </span>
+            </div>
+
+            <div className="duel-stage__focus-display">
+              <img
+                alt={challenge.driverName ? `${challenge.driverName} poster` : 'Driver poster'}
+                className="duel-stage__focus-poster"
+                src={challenge.posterSrc || '/assets/max_with_earphone.jpeg'}
+              />
+              <div className="duel-stage__focus-overlay" />
+              <div className="duel-stage__focus-copy">
+                <span className="duel-stage__focus-kicker">audio trace armed</span>
+                <strong>{answerValue.trim() || 'UNKNOWN CIRCUIT'}</strong>
+                <p>Use engine note, straight length, braking rhythm, and corner cadence to identify the venue.</p>
+              </div>
+            </div>
+          </section>
+
+          <aside className="duel-stage__sidebar">
+            <TelemetryStrip hudState={hudState} />
+
+            <section className="duel-console duel-console--timer">
+              <p className="hud-label">session clock</p>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <strong className="duel-stage__sidebar-value">{runState === 'live' ? 'signal live' : 'waiting arm'}</strong>
+                  <p className="duel-stage__sidebar-copy">The timer starts with audio playback and freezes on reveal.</p>
+                </div>
+                <TimerRing
+                  currentTime={displayElapsedMs}
+                  durationMs={MAX_GUESS_MS}
+                />
+              </div>
+            </section>
+
+            <section className="duel-console duel-console--trace">
+              <p className="hud-label">protocol markers</p>
+              <div className="duel-stage__protocol">
+                <span className={runState !== 'idle' ? 'is-active' : ''}>audio armed</span>
+                <span className={runState === 'live' ? 'is-active' : ''}>guess window</span>
+                <span className={Boolean(feedback) ? 'is-active' : ''}>feedback pulse</span>
+                <span className={runState === 'result' ? 'is-active' : ''}>track reveal</span>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <div className="duel-stage__dock">
+          <InteractionDock
+            answerValue={answerValue}
+            canStart={Boolean(audioPlayer)}
+            canResume={canResume}
+            feedback={feedback}
+            isPlaying={isPlaying}
+            onAnswerChange={(value) => {
+              setAnswerValue(value);
+              if (submitState === 'error') {
+                setSubmitState('idle');
+              }
+            }}
+            onReplay={handleReplayLive}
+            onAnswerSubmit={handleAnswerSubmit}
+            onStart={handleStart}
+            onSurrender={handleSurrender}
+            onTogglePlayback={handleTogglePlayback}
+            runState={runState}
+            submitState={submitState}
+            locale={locale}
+            timer={(
+              <TimerRing
+                currentTime={displayElapsedMs}
+                durationMs={MAX_GUESS_MS}
+              />
+            )}
+          />
+        </div>
+
         {error ? (
-          <div className="pointer-events-none absolute inset-x-6 top-28 z-20 rounded-full border border-white/20 bg-black/28 px-4 py-2 text-center text-xs text-white/90 backdrop-blur-xl">
+          <div className="pointer-events-none absolute left-1/2 top-24 z-20 w-[min(92%,620px)] -translate-x-1/2 rounded-full border border-white/20 bg-black/28 px-4 py-2 text-center text-xs text-white/90 backdrop-blur-xl">
             {error}
           </div>
         ) : null}
