@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import App from '../src/player/App.jsx';
 
 describe('App', () => {
-  it('renders the stripped poster layout with the earphone portrait, hidden audio, timer, and start controls', () => {
+  it('renders the dashboard layout with header, hidden audio, timer, and start controls', () => {
     const markup = renderToStaticMarkup(
       <App
         initialLibrary={[{
@@ -29,8 +29,7 @@ describe('App', () => {
     expect(markup).toContain('data-testid="duel-audio"');
     expect(markup).toContain('data-testid="timer-ring"');
     expect(markup).toContain('data-testid="interaction-dock"');
-    expect(markup).toContain('duel-console--hero');
-    expect(markup).toContain('/assets/max_with_earphone.jpeg');
+    expect(markup).toContain('F1.GUESS');
     expect(markup).toContain('Can You Beat Max?');
     expect(markup).toContain('Start Duel');
     expect(markup).not.toContain('Can you beat Max by ear?');

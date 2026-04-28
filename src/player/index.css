@@ -1,1214 +1,794 @@
-@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;900&family=Syne:wght@500;600;700;800&family=Teko:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap');
 @import 'tailwindcss';
 
+/* ── Design Tokens ── */
 :root {
+  --color-bg: #000d0f;
+  --color-surface: #0a1115;
+  --color-surface-raised: #111a1d;
+  --color-surface-deep: #05090b;
+  --color-border: #273137;
+  --color-border-soft: #1a2328;
+  --color-text: #f7f8f8;
+  --color-text-muted: #b0b8b8;
+  --color-text-dim: #6f797d;
+  --color-red: #ff3330;
+  --color-red-deep: #e10600;
+  --color-red-dark: #8c100d;
+  --color-green: #00ff9c;
+  --color-yellow: #ffb830;
+  --color-blue: #4ca8ff;
+
+  --font-display: 'Rajdhani', 'Arial Narrow', sans-serif;
+  --font-ui: 'Rajdhani', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Roboto Mono', 'SFMono-Regular', monospace;
+
+  --radius-panel: 8px;
+  --radius-control: 5px;
+  --radius-btn: 5px;
+  --shadow-panel: 0 18px 48px rgba(0, 0, 0, 0.45);
+  --shadow-red-glow: 0 0 22px rgba(255, 51, 48, 0.45);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasis: cubic-bezier(0.16, 1, 0.3, 1);
   color-scheme: dark;
-  --shell-ink: #120d0d;
-  --shell-panel: rgba(28, 19, 19, 0.72);
-  --shell-line: rgba(246, 238, 232, 0.14);
-  --shell-accent: #f0c4af;
-  --shell-accent-strong: #d8a38d;
-  --shell-copy: rgba(246, 238, 232, 0.86);
 }
 
-html,
-body,
-#app {
-  min-height: 100%;
-}
-
+/* ── Reset ── */
+html, body, #app { min-height: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'IBM Plex Sans', sans-serif;
-  background: linear-gradient(180deg, #120d0d 0%, #0d0909 100%);
-  color: var(--shell-copy);
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-.glass-panel {
+  font-family: var(--font-ui);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
-    rgba(19, 13, 13, 0.72);
-  backdrop-filter: blur(30px);
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255,255,255,0.025) 0,
+      rgba(255,255,255,0.025) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    #000d0f;
+  background-size: 32px 32px, 32px 32px, 12px 12px, auto;
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, textarea, select { font: inherit; }
+
+/* ── Shared Utilities ── */
+.panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.01)),
+    rgba(10,17,21,0.92);
+  border: 1px solid rgba(176,184,184,0.16);
+  border-radius: var(--radius-panel);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 24px 80px rgba(0, 0, 0, 0.22);
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    var(--shadow-panel);
 }
 
-.hud-label,
-.hud-stat {
-  margin: 0;
-  font-family: 'Azeret Mono', monospace;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-
-.hud-label {
-  font-size: 11px;
-  color: rgba(246, 238, 232, 0.52);
-}
-
-.hud-stat {
-  font-size: 0.78rem;
-  color: #f8fafc;
-}
-
-.hero-display {
-  font-family: 'Teko', sans-serif;
-}
-
-.duel-stage {
-  background:
-    radial-gradient(circle at top, rgba(240, 196, 175, 0.08), transparent 24%),
-    linear-gradient(180deg, #140e0e 0%, #0d0909 100%);
-}
-
-.signal-backdrop {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  --tilt-x: 0deg;
-  --tilt-y: 0deg;
-  --scene-drift-x: 0px;
-  --scene-drift-y: 0px;
-  --mesh-drift-near: 0px;
-  --mesh-drift-mid: 0px;
-  --mesh-drift-far: 0px;
-}
-
-.signal-backdrop__grid,
 .hud-grid {
-  background-image: radial-gradient(circle at 1px 1px, rgba(244, 233, 226, 0.18) 0.85px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 0.7px, transparent 0);
   background-size: 18px 18px;
 }
 
-.signal-backdrop__grid {
-  position: absolute;
-  inset: 0;
-  opacity: 0.45;
-}
-
-.signal-backdrop__glow {
-  position: absolute;
-  inset: auto;
-  border-radius: 999px;
-  filter: blur(80px);
-  opacity: 0.26;
-}
-
-.signal-backdrop__glow--left {
-  left: -6%;
-  bottom: -14%;
-  width: 28rem;
-  height: 28rem;
-  background: rgba(240, 196, 175, 0.18);
-}
-
-.signal-backdrop__glow--right {
-  right: -6%;
-  top: 8%;
-  width: 22rem;
-  height: 22rem;
-  background: rgba(196, 167, 155, 0.12);
-}
-
-.signal-backdrop__scene {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  perspective: 1400px;
-  transform:
-    translate3d(var(--scene-drift-x), var(--scene-drift-y), 0)
-    rotateX(var(--tilt-x))
-    rotateY(var(--tilt-y));
-  transition: transform 140ms linear;
-}
-
-.signal-backdrop__mesh {
-  position: absolute;
-  left: -4%;
-  right: -4%;
-  width: 108%;
-  pointer-events: none;
-  transform-origin: center bottom;
-}
-
-.signal-backdrop__mesh--near {
-  bottom: -4%;
-  height: 52%;
-  opacity: 0.5;
-  animation: meshFloatNear 8s ease-in-out infinite;
-}
-
-.signal-backdrop__mesh--mid {
-  bottom: 14%;
-  height: 40%;
-  opacity: 0.28;
-  animation: meshFloatMid 10s ease-in-out infinite;
-}
-
-.signal-backdrop__mesh--far {
-  bottom: 28%;
-  height: 28%;
-  opacity: 0.18;
-  animation: meshFloatFar 12s ease-in-out infinite;
-}
-
-.signal-backdrop__mesh-line {
-  fill: none;
-  stroke: rgba(244, 233, 226, 0.28);
-  stroke-width: 1.1;
-  vector-effect: non-scaling-stroke;
-}
-
-.signal-backdrop__mesh-line--vertical {
-  stroke: rgba(244, 233, 226, 0.14);
-}
-
-.signal-backdrop__frame {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 14%;
-  pointer-events: none;
-}
-
-.signal-backdrop__frame span {
-  position: absolute;
-  display: block;
-  height: 1px;
-  background: rgba(244, 233, 226, 0.18);
-}
-
-.signal-backdrop__frame--left {
-  left: 0;
-}
-
-.signal-backdrop__frame--left span:nth-child(1) {
-  top: 42%;
-  left: 4%;
-  width: 7rem;
-}
-
-.signal-backdrop__frame--left span:nth-child(2) {
-  top: 65%;
-  left: 0;
-  width: 10rem;
-}
-
-.signal-backdrop__frame--left span:nth-child(3) {
-  top: 82%;
-  left: 12%;
-  width: 6rem;
-}
-
-.signal-backdrop__frame--right {
-  right: 0;
-}
-
-.duel-stage__backdrop-veil,
-.result-review__veil {
-  background:
-    linear-gradient(180deg, rgba(13, 9, 9, 0.3), rgba(13, 9, 9, 0.72)),
-    radial-gradient(circle at center, transparent 24%, rgba(13, 9, 9, 0.34));
-}
-
-.duel-stage__shell {
-  isolation: isolate;
-}
-
-.duel-stage__shell-highlight {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent);
-}
-
-.duel-stage__topbar {
+/* ── Header / Top Nav ── */
+.top-nav {
+  height: 56px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.2rem 1.4rem 0;
+  border-bottom: 1px solid rgba(176,184,184,0.14);
+  padding: 0 16px;
 }
 
-.duel-stage__brand-block {
+.top-nav__brand {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-red);
+}
+
+.top-nav__links {
   display: flex;
-  align-items: baseline;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.duel-stage__brand {
-  font-family: 'Teko', sans-serif;
-  font-size: 1.9rem;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  color: rgba(255, 247, 242, 0.96);
-}
-
-.duel-stage__sys {
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.46);
-}
-
-.duel-stage__layout {
-  display: grid;
-  grid-template-columns: minmax(320px, 0.94fr) minmax(440px, 0.98fr) minmax(280px, 0.52fr);
-  gap: 1.1rem;
-  flex: 1;
-  padding: 1.8rem 1.4rem 0;
-  align-items: start;
-}
-
-.duel-stage__hero-title {
-  margin: 0;
-  font-size: clamp(5.4rem, 8vw, 9.2rem);
-  line-height: 0.86;
-  letter-spacing: 0.01em;
-  color: rgba(255, 247, 242, 0.98);
-  text-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
-}
-
-.duel-stage__hero-line {
-  display: block;
-}
-
-.duel-stage__hero-title--cjk {
-  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: clamp(4.4rem, 7vw, 7rem);
-  font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: -0.08em;
-}
-
-.duel-stage__lede {
-  max-width: 28rem;
-  margin: 1.35rem 0 0;
-  font-size: 1rem;
-  line-height: 1.85;
-  color: rgba(246, 238, 232, 0.64);
-}
-
-.duel-console {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(244, 233, 226, 0.1);
-  background: linear-gradient(180deg, rgba(26, 17, 17, 0.82), rgba(15, 11, 11, 0.72));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 24px 60px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(26px);
-}
-
-.poster-noise {
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 0.7px, transparent 0);
-  background-size: 16px 16px;
-}
-
-.duel-console--hero {
-  align-self: center;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  padding: 8rem 0 2rem;
-}
-
-.duel-console__eyebrow {
-  margin: 0 0 0.8rem;
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.74rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.6);
-}
-
-.duel-stage__hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem;
-  margin-top: 1.5rem;
-}
-
-.duel-console__chip {
-  min-width: 10rem;
-  padding: 0.95rem 1rem;
-  border: 1px solid rgba(244, 233, 226, 0.1);
-  background: rgba(22, 15, 15, 0.44);
-}
-
-.duel-console__chip span {
-  display: block;
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.64rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.5);
-}
-
-.duel-console__chip strong {
-  display: block;
-  margin-top: 0.55rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(255, 247, 242, 0.95);
-}
-
-.duel-console--focus {
-  min-height: 34rem;
-  padding: 1rem;
-  margin-top: 1.4rem;
-}
-
-.duel-stage__focus-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.duel-stage__focus-title {
-  margin: 0.55rem 0 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: rgba(255, 247, 242, 0.92);
-}
-
-.duel-stage__focus-state {
-  padding: 0.55rem 0.8rem;
-  border: 1px solid rgba(244, 233, 226, 0.12);
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.66rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.64);
-}
-
-.duel-stage__focus-display {
-  position: relative;
-  min-height: 25rem;
-  margin-top: 1rem;
-  overflow: hidden;
-  border: 1px solid rgba(244, 233, 226, 0.08);
-  background:
-    linear-gradient(180deg, rgba(18, 12, 12, 0.24), rgba(18, 12, 12, 0.88)),
-    linear-gradient(180deg, rgba(240, 196, 175, 0.06), transparent 30%);
-}
-
-.duel-stage__focus-poster {
-  position: absolute;
-  inset: 0;
-  width: 100%;
+  align-items: center;
+  gap: 4px;
+  margin-left: 32px;
   height: 100%;
-  object-fit: cover;
-  filter: grayscale(0.3) saturate(0.62) brightness(0.42);
-  transform: scale(1.05);
 }
 
-.duel-stage__focus-overlay {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(18, 12, 12, 0.05) 0%, rgba(18, 12, 12, 0.22) 30%, rgba(18, 12, 12, 0.82) 100%),
-    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.12), transparent 18%);
-}
-
-.duel-stage__focus-copy {
-  position: absolute;
-  left: 1.2rem;
-  right: 1.2rem;
-  bottom: 1.15rem;
-}
-
-.duel-stage__focus-kicker {
-  display: inline-block;
-  margin-bottom: 0.6rem;
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.66rem;
-  letter-spacing: 0.2em;
+.nav-link {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.54);
+  text-decoration: none;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  transition: color 140ms var(--ease-standard);
 }
 
-.duel-stage__focus-copy strong {
-  display: block;
-  font-family: 'Teko', sans-serif;
-  font-size: clamp(3.8rem, 6vw, 5.5rem);
-  line-height: 0.84;
-  letter-spacing: 0.02em;
-  color: rgba(255, 247, 242, 0.96);
+.nav-link:hover { color: var(--color-text); }
+.nav-link.active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-red);
 }
 
-.duel-stage__focus-copy p {
-  max-width: 26rem;
-  margin: 0.7rem 0 0;
-  font-size: 0.92rem;
-  line-height: 1.8;
-  color: rgba(246, 238, 232, 0.64);
-}
-
-.duel-stage__sidebar {
-  display: grid;
-  align-content: start;
-  gap: 1rem;
-  margin-top: 1.4rem;
-}
-
-.duel-console--timer,
-.duel-console--trace {
-  padding: 1rem;
-}
-
-.duel-stage__sidebar-value {
-  display: block;
-  margin-top: 0.6rem;
-  font-family: 'Teko', sans-serif;
-  font-size: 2.2rem;
-  line-height: 0.9;
-  letter-spacing: 0.02em;
-  color: rgba(255, 247, 242, 0.94);
-}
-
-.duel-stage__sidebar-copy {
-  margin: 0.45rem 0 0;
-  font-size: 0.82rem;
-  line-height: 1.7;
-  color: rgba(246, 238, 232, 0.58);
-}
-
-.duel-stage__protocol {
-  display: grid;
-  gap: 0.7rem;
-  margin-top: 0.95rem;
-}
-
-.duel-stage__protocol span {
-  padding: 0.72rem 0.85rem;
-  border: 1px solid rgba(244, 233, 226, 0.08);
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
+/* ── Buttons ── */
+.button-primary {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: var(--radius-btn);
+  border: 1px solid rgba(255,80,76,0.65);
+  background: linear-gradient(180deg, #ff3330 0%, #e10600 100%);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.42);
-}
-
-.duel-stage__protocol span.is-active {
-  border-color: rgba(240, 196, 175, 0.28);
-  background: rgba(240, 196, 175, 0.08);
-  color: rgba(255, 240, 234, 0.88);
-}
-
-.duel-stage__dock {
-  padding: 1rem 1.4rem 1.4rem;
-}
-
-.poster-timer {
-  position: relative;
-  z-index: 3;
-}
-
-.poster-timer__ring {
-  position: relative;
-  width: 106px;
-  height: 106px;
-  border-radius: 999px;
-  background: rgba(11, 8, 8, 0.44);
-  border: 1px solid rgba(244, 233, 226, 0.08);
+  cursor: pointer;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 34px rgba(0, 0, 0, 0.22);
+    0 0 18px rgba(255,51,48,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+  transition: filter 140ms var(--ease-standard), transform 140ms var(--ease-standard);
 }
 
-.poster-timer__ring::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background:
-    conic-gradient(from -90deg, rgba(255, 247, 242, 0.86) 0deg, rgba(255, 247, 242, 0.86) 300deg, rgba(255, 255, 255, 0.08) 300deg, rgba(255, 255, 255, 0.08) 360deg);
-  -webkit-mask: radial-gradient(circle, transparent 73%, black 74.5%);
-  mask: radial-gradient(circle, transparent 73%, black 74.5%);
+.button-primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.button-primary:active { background: var(--color-red-dark); box-shadow: none; transform: translateY(0); }
+.button-primary:disabled {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+  color: var(--color-text-dim);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
 }
 
-.poster-timer__ring::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background:
-    conic-gradient(from -90deg, var(--shell-accent-strong) 0deg, var(--shell-accent-strong) var(--timer-progress), transparent var(--timer-progress), transparent 360deg);
-  -webkit-mask: radial-gradient(circle, transparent 73%, black 74.5%);
-  mask: radial-gradient(circle, transparent 73%, black 74.5%);
+.button-secondary {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 140ms var(--ease-standard), border-color 140ms var(--ease-standard);
 }
 
-.poster-timer__inner {
-  position: absolute;
-  inset: 8px;
+.button-secondary:hover { background: var(--color-surface-raised); border-color: rgba(176,184,184,0.3); }
+.button-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button-ghost {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-btn);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 140ms var(--ease-standard), color 140ms var(--ease-standard), border-color 140ms var(--ease-standard);
+}
+
+.button-ghost:hover { background: var(--color-surface); border-color: var(--color-border-soft); color: var(--color-text); }
+
+.button-danger {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-btn);
+  border: 1px solid rgba(255,51,48,0.3);
+  background: rgba(140,16,13,0.25);
+  color: #ffb8b6;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 140ms var(--ease-standard);
+}
+
+.button-danger:hover { background: rgba(140,16,13,0.45); }
+
+/* ── Circular Play Control ── */
+.play-control {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--color-red);
+  background: var(--color-surface-deep);
+  cursor: pointer;
   display: grid;
   place-items: center;
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)),
-    rgba(14, 10, 10, 0.42);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 0 24px rgba(255,51,48,0.45);
+  transition: box-shadow 160ms var(--ease-standard), transform 160ms var(--ease-standard);
 }
 
-.poster-timer__text {
-  text-align: center;
+.play-control:hover { box-shadow: 0 0 36px rgba(255,51,48,0.65); transform: scale(1.04); }
+.play-control:active { transform: scale(0.96); }
+
+.play-control__icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
 }
 
-.poster-timer__text span {
+.play-control__icon--play {
+  border-width: 10px 0 10px 18px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 3px;
+}
+
+.play-control__icon--pause {
+  width: 14px;
+  height: 16px;
+  border: none;
+  display: flex;
+  gap: 4px;
+}
+
+.play-control__icon--pause::before,
+.play-control__icon--pause::after {
+  content: '';
   display: block;
-  margin-bottom: 0.15rem;
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.52rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(246, 238, 232, 0.44);
+  width: 4px;
+  height: 16px;
+  background: #fff;
+  border-radius: 2px;
 }
 
-.poster-timer__inner strong {
-  font-family: 'Azeret Mono', monospace;
-  font-size: 0.8rem;
-  font-weight: 600;
+.skip-control {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
   letter-spacing: 0.02em;
-  color: #ffffff;
+  transition: border-color 140ms var(--ease-standard), color 140ms var(--ease-standard);
 }
 
-.result-review__hero,
-.result-review__panel {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 24px 60px rgba(0, 0, 0, 0.22);
+.skip-control:hover { border-color: var(--color-red); color: var(--color-text); }
+
+/* ── Waveform ── */
+.waveform-area {
+  position: relative;
+  background: var(--color-surface-deep);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
 }
 
-.track-hud__viewport svg {
-  display: block;
-}
-
-@keyframes meshFloatNear {
-  0%,
-  100% {
-    transform: translate3d(var(--mesh-drift-near), 10px, 0) scaleY(1.02);
-  }
-
-  50% {
-    transform: translate3d(var(--mesh-drift-near), -10px, 0) scaleY(0.99);
-  }
-}
-
-@keyframes meshFloatMid {
-  0%,
-  100% {
-    transform: translate3d(var(--mesh-drift-mid), 8px, 0) scaleY(1.01);
-  }
-
-  50% {
-    transform: translate3d(var(--mesh-drift-mid), -8px, 0) scaleY(0.985);
-  }
-}
-
-@keyframes meshFloatFar {
-  0%,
-  100% {
-    transform: translate3d(var(--mesh-drift-far), 6px, 0) scaleY(1);
-  }
-
-  50% {
-    transform: translate3d(var(--mesh-drift-far), -6px, 0) scaleY(0.99);
-  }
-}
-
-@media (max-width: 1180px) {
-  .duel-stage__layout {
-    grid-template-columns: 1fr;
-  }
-
-  .duel-console--hero {
-    padding-top: 1.25rem;
-    padding-bottom: 0.5rem;
-  }
-
-  .duel-stage__sidebar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .duel-stage__topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .duel-stage__brand-block {
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .duel-stage__layout,
-  .duel-stage__dock {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .duel-stage__hero-title {
-    font-size: clamp(3.8rem, 18vw, 6.4rem);
-  }
-
-  .duel-stage__hero-title--cjk {
-    font-size: clamp(3.8rem, 15vw, 5.6rem);
-  }
-
-  .duel-stage__focus-copy strong {
-    font-size: clamp(3rem, 16vw, 4.4rem);
-  }
-
-  .duel-stage__sidebar {
-    grid-template-columns: 1fr;
-  }
-
-  .poster-timer__ring {
-    width: 98px;
-    height: 98px;
-  }
-}
-
-.team-radio-barrage {
+.waveform-area .hud-grid {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 2;
+  opacity: 0.5;
 }
 
-.team-radio-barrage__item {
+.waveform-bar {
+  fill: rgba(176,184,184,0.35);
+  transition: fill 180ms var(--ease-standard);
+}
+
+.waveform-bar.active {
+  fill: var(--color-red);
+  filter: drop-shadow(0 0 4px rgba(255,51,48,0.45));
+}
+
+/* ── Timeline ── */
+.timeline {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.timeline__fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-red);
+  box-shadow: 0 0 8px rgba(255,51,48,0.4);
+  transition: width 100ms linear;
+}
+
+.timeline__thumb {
   position: absolute;
-  left: 100%;
-  top: var(--barrage-top);
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-red);
+  border: 2px solid #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(255,51,48,0.5);
+  transition: left 100ms linear;
+}
+
+.timeline__labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--color-text-dim);
+}
+
+/* ── Input ── */
+.input-dark {
+  height: 40px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 140ms var(--ease-standard), box-shadow 140ms var(--ease-standard);
+}
+
+.input-dark::placeholder { color: var(--color-text-dim); }
+.input-dark:focus {
+  border-color: var(--color-red);
+  box-shadow: 0 0 0 3px rgba(255,51,48,0.15);
+}
+
+/* ── Answer Choices ── */
+.answer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color 140ms var(--ease-standard), background 140ms var(--ease-standard);
+}
+
+.answer-row:hover { border-color: rgba(176,184,184,0.3); background: var(--color-surface-raised); }
+.answer-row.selected {
+  border-color: var(--color-red);
+  background: rgba(255,51,48,0.08);
+  box-shadow: 0 0 12px rgba(255,51,48,0.15);
+}
+
+.answer-row.correct {
+  border-color: var(--color-green);
+  background: rgba(0,255,156,0.06);
+}
+
+.answer-row.incorrect {
+  border-color: var(--color-red);
+  background: rgba(255,51,48,0.06);
+}
+
+.answer-row:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.answer-row__icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--color-text-dim);
+}
+
+.answer-row__text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.answer-row__badge {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Chips / Tags ── */
+.chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  max-width: min(34rem, calc(100vw - 2rem));
-  padding: 0.72rem 1rem 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
-    rgba(7, 11, 18, 0.72);
-  backdrop-filter: blur(18px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 42px rgba(0, 0, 0, 0.24);
-  white-space: nowrap;
-  animation: barrageTraverse var(--barrage-duration) linear forwards;
-}
-
-.team-radio-barrage__item[data-accent='heat'] {
-  border-color: rgba(255, 173, 115, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 42px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(255, 137, 53, 0.06);
-}
-
-.team-radio-barrage__item[data-accent='ice'] {
-  border-color: rgba(155, 195, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 18px 42px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(130, 184, 255, 0.08);
-}
-
-.team-radio-barrage__item[data-accent='max'] {
-  border-color: rgba(255, 205, 152, 0.24);
-  background:
-    linear-gradient(90deg, rgba(255, 168, 92, 0.2), rgba(255, 255, 255, 0.02)),
-    rgba(22, 10, 5, 0.78);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 247, 236, 0.06),
-    0 22px 56px rgba(0, 0, 0, 0.28),
-    0 0 24px rgba(255, 144, 52, 0.14);
-}
-
-.team-radio-barrage__driver {
-  flex: none;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(214, 219, 233, 0.68);
-}
-
-.team-radio-barrage__item[data-accent='max'] .team-radio-barrage__driver {
-  color: rgba(255, 226, 188, 0.72);
-}
-
-.team-radio-barrage__quote {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(0.95rem, 2vw, 1.2rem);
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-family: var(--font-ui);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: -0.03em;
-  color: rgba(247, 249, 252, 0.94);
-  text-shadow: 0 0 18px rgba(255, 255, 255, 0.04);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: transparent;
 }
 
-.team-radio-barrage--max-win .team-radio-barrage__quote {
-  color: rgba(255, 239, 223, 0.96);
-  text-shadow: 0 0 22px rgba(255, 148, 66, 0.12);
+.chip--easy   { border-color: var(--color-green); color: var(--color-green); }
+.chip--medium { border-color: var(--color-yellow); color: var(--color-yellow); }
+.chip--hard   { border-color: var(--color-red); color: var(--color-red); }
+.chip--selected { background: var(--color-surface-raised); }
+
+/* ── Track Map ── */
+.track-map-panel {
+  position: relative;
+  background: var(--color-surface-deep);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
 }
 
-.verstappen-takeover {
-  opacity: 0;
+.track-map-panel .hud-grid {
   position: absolute;
-  animation: orangeTakeover 900ms ease forwards;
+  inset: 0;
+  opacity: 0.55;
 }
 
-.verstappen-takeover__flash,
-.verstappen-takeover__glow,
-.verstappen-takeover__stripes,
-.verstappen-takeover__grid,
-.verstappen-takeover__ring,
-.verstappen-takeover__panel,
-.verstappen-takeover__hero-mark,
-.verstappen-takeover__slashes,
-.verstappen-takeover__badge {
+.track-map-svg {
+  display: block;
+}
+
+.track-map-svg .track-glow {
+  fill: none;
+  stroke: rgba(255,51,48,0.35);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(255,51,48,0.5));
+}
+
+.track-map-svg .track-core {
+  fill: none;
+  stroke: var(--color-red);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter:
+    drop-shadow(0 0 4px rgba(255,51,48,0.9))
+    drop-shadow(0 0 14px rgba(255,51,48,0.55));
+}
+
+.track-map-svg .track-hot {
+  fill: none;
+  stroke: rgba(255,255,255,0.6);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+}
+
+.track-marker {
+  filter: drop-shadow(0 0 6px rgba(255,51,48,0.8));
+}
+
+/* ── Progress & Timer ── */
+.timer-ring {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.timer-ring__svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.timer-ring__track {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 3;
+}
+
+.timer-ring__fill {
+  fill: none;
+  stroke: var(--color-red);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(255,51,48,0.5));
+  transition: stroke-dashoffset 300ms linear;
+}
+
+.timer-ring__ticks {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 2;
+}
+
+.timer-ring__center {
   position: absolute;
-}
-
-.verstappen-takeover__flash {
   inset: 0;
-  background:
-    radial-gradient(circle at 30% 48%, rgba(255, 240, 223, 0.48), transparent 16%),
-    radial-gradient(circle at 66% 42%, rgba(255, 186, 102, 0.38), transparent 18%);
-  mix-blend-mode: screen;
-  opacity: 0;
-}
-
-.verstappen-takeover__glow {
-  inset: 0;
-  background:
-    radial-gradient(circle at 84% 24%, rgba(255, 178, 102, 0.22), transparent 16%),
-    radial-gradient(circle at 24% 74%, rgba(255, 125, 43, 0.26), transparent 22%),
-    linear-gradient(135deg, rgba(255, 115, 46, 0.24), transparent 40%, rgba(255, 214, 137, 0.12));
-  opacity: 0.4;
-}
-
-.verstappen-takeover__stripes {
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(174, 28, 40, 0.22) 0 33.33%, rgba(244, 244, 244, 0.1) 33.33% 66.66%, rgba(33, 70, 139, 0.16) 66.66% 100%);
-  mask-image: linear-gradient(115deg, transparent 18%, rgba(0, 0, 0, 0.88) 36%, rgba(0, 0, 0, 0.16) 72%, transparent 100%);
-  opacity: 0.5;
-  transform: translateX(12%);
-}
-
-.verstappen-takeover__grid {
-  inset: 8% 4%;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent);
-  opacity: 0.36;
-}
-
-.verstappen-takeover__slashes {
-  left: clamp(1.2rem, 4vw, 3.5rem);
-  top: clamp(2.2rem, 7vw, 5rem);
   display: flex;
-  gap: 0.55rem;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
-.verstappen-takeover__slashes span {
-  width: 0.55rem;
-  height: clamp(2.5rem, 8vw, 5.4rem);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 232, 206, 0.92), rgba(255, 123, 47, 0.56));
-  box-shadow: 0 0 18px rgba(255, 123, 47, 0.22);
-  transform: translateY(18px) rotate(20deg);
-  opacity: 0;
+.timer-ring__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
 }
 
-.verstappen-takeover__badge {
-  right: clamp(1rem, 3vw, 2.2rem);
-  top: clamp(1rem, 3vw, 2rem);
+.timer-ring__value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  margin-top: 2px;
+}
+
+/* ── Telemetry HUD ── */
+.telemetry-card {
+  padding: 12px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-panel);
+}
+
+.telemetry-card__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.telemetry-card__value {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.telemetry-card__unit {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+/* ── Stat Row ── */
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.stat-row__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.stat-row__value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.stat-row__hint {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-dim);
+  margin-top: 2px;
+}
+
+/* ── Dashboard Layout ── */
+.dashboard {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 18px;
+  min-height: calc(100vh - 56px);
+  padding: 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.dashboard__sidebar {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.dashboard__main {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+/* ── Result Icon ── */
+.result-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  width: clamp(4.3rem, 8vw, 5.7rem);
-  aspect-ratio: 1;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 224, 188, 0.18);
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), rgba(255, 120, 47, 0.12));
-  backdrop-filter: blur(12px);
-  transform: scale(0.72);
-  opacity: 0;
 }
 
-.verstappen-takeover__badge span {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(1rem, 2.2vw, 1.35rem);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(255, 240, 221, 0.84);
+.result-icon--correct {
+  background: rgba(0,255,156,0.1);
+  border: 2px solid var(--color-green);
+  color: var(--color-green);
 }
 
-.verstappen-takeover__ring {
-  border: 1px solid rgba(255, 228, 182, 0.16);
-  border-radius: 999px;
-  filter: drop-shadow(0 0 30px rgba(255, 123, 47, 0.22));
-  opacity: 0;
+.result-icon--wrong {
+  background: rgba(255,51,48,0.1);
+  border: 2px solid var(--color-red);
+  color: var(--color-red);
 }
 
-.verstappen-takeover__ring--outer {
-  right: 7%;
-  top: 10%;
-  width: clamp(11rem, 18vw, 17rem);
-  height: clamp(11rem, 18vw, 17rem);
-  animation: victoryRing 6s linear infinite;
+/* ── Animations ── */
+@keyframes red-pulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(255,51,48,0.35); }
+  50% { box-shadow: 0 0 32px rgba(255,51,48,0.55); }
 }
 
-.verstappen-takeover__ring--inner {
-  right: 11%;
-  top: 14%;
-  width: clamp(7rem, 12vw, 10rem);
-  height: clamp(7rem, 12vw, 10rem);
-  animation: victoryRing 4s linear infinite reverse;
+@keyframes red-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
-.verstappen-takeover__hero-mark {
-  left: clamp(1rem, 4vw, 3.4rem);
-  top: clamp(3.4rem, 12vw, 9.4rem);
-  display: grid;
-  gap: 0;
-  opacity: 0;
-  transform: translateY(26px) scale(0.9);
+@keyframes green-flash {
+  0% { background: rgba(0,255,156,0.2); }
+  100% { background: transparent; }
 }
 
-.verstappen-takeover__panel {
-  left: clamp(1rem, 4vw, 3.5rem);
-  right: clamp(1rem, 4vw, 3.5rem);
-  bottom: clamp(1rem, 4vw, 2.75rem);
-  display: grid;
-  gap: 1.1rem;
-  max-width: min(48rem, 100%);
-  padding: clamp(1rem, 2vw, 1.4rem);
-  border: 1px solid rgba(255, 240, 221, 0.14);
-  border-radius: 2rem;
-  background:
-    linear-gradient(180deg, rgba(13, 12, 18, 0.82), rgba(13, 11, 15, 0.62)),
-    rgba(12, 10, 14, 0.62);
-  backdrop-filter: blur(22px);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.28);
-  opacity: 0;
-  transform: translateY(34px);
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-.verstappen-takeover__eyebrow {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.26em;
-  text-transform: uppercase;
-  color: rgba(255, 213, 173, 0.74);
+.animate-pulse-glow { animation: red-pulse 2s ease-in-out infinite; }
+.animate-shake { animation: red-shake 300ms var(--ease-standard); }
+.animate-flash-green { animation: green-flash 400ms var(--ease-emphasis); }
+.animate-fade-in-up { animation: fade-in-up 220ms var(--ease-emphasis) forwards; }
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-.verstappen-takeover__hero {
-  display: grid;
-  gap: 0.75rem;
-  align-items: end;
+/* ── Mobile Bottom Nav ── */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: var(--color-surface-deep);
+  border-top: 1px solid var(--color-border-soft);
+  padding: 0 8px;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  z-index: 50;
 }
 
-.verstappen-takeover__hero-main {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(4.8rem, 14vw, 8.6rem);
-  font-weight: 800;
-  letter-spacing: -0.12em;
-  line-height: 0.82;
-  color: rgba(255, 234, 214, 0.92);
-  text-shadow: 0 0 28px rgba(255, 131, 53, 0.26), 0 0 120px rgba(255, 131, 53, 0.18);
-  transform: translateX(-0.06em);
-}
-
-.verstappen-takeover__hero-sub {
-  margin-top: -0.6rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(0.86rem, 1.6vw, 1rem);
-  letter-spacing: 0.54em;
-  text-transform: uppercase;
-  color: rgba(255, 225, 188, 0.56);
-}
-
-.verstappen-takeover__copy h2 {
-  margin: 0;
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(1.45rem, 3.8vw, 2.6rem);
-  line-height: 1;
-  letter-spacing: -0.06em;
-  color: white;
-}
-
-.verstappen-takeover__copy p {
-  margin: 0.8rem 0 0;
-  max-width: 32rem;
-  font-size: 0.96rem;
-  line-height: 1.7;
-  color: rgba(244, 232, 221, 0.76);
-}
-
-.verstappen-takeover__stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-.verstappen-takeover__stat {
-  display: grid;
-  gap: 0.45rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(255, 223, 190, 0.12);
-  border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.verstappen-takeover__stat span,
-.verstappen-takeover__track span {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(255, 216, 173, 0.58);
-}
-
-.verstappen-takeover__stat strong {
-  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-  font-weight: 700;
-  letter-spacing: -0.05em;
-  color: rgba(255, 244, 234, 0.94);
-}
-
-.verstappen-takeover__track {
+.mobile-nav__items {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
+  align-items: center;
+  justify-content: space-around;
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
-.verstappen-takeover__track span {
-  padding: 0.55rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 223, 190, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+.mobile-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-dim);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: color 140ms var(--ease-standard);
 }
 
-.verstappen-takeover[data-phase='1'] .verstappen-takeover__flash {
-  animation: victoryFlash 380ms ease-out forwards;
-}
+.mobile-nav__item.active { color: var(--color-red); }
+.mobile-nav__item svg { width: 20px; height: 20px; }
 
-.verstappen-takeover[data-phase='1'] .verstappen-takeover__slashes span {
-  animation: victorySlash 500ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  animation-delay: calc(var(--slash-index) * 45ms);
-}
-
-.verstappen-takeover[data-phase='2'] .verstappen-takeover__hero-mark,
-.verstappen-takeover[data-phase='3'] .verstappen-takeover__hero-mark,
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__hero-mark {
-  animation: victoryHeroIn 640ms cubic-bezier(0.18, 0.9, 0.25, 1) forwards;
-}
-
-.verstappen-takeover[data-phase='2'] .verstappen-takeover__badge,
-.verstappen-takeover[data-phase='3'] .verstappen-takeover__badge,
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__badge {
-  animation: victoryElementIn 520ms ease forwards;
-}
-
-.verstappen-takeover[data-phase='2'] .verstappen-takeover__ring,
-.verstappen-takeover[data-phase='3'] .verstappen-takeover__ring,
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__ring {
-  animation:
-    victoryRing 6s linear infinite,
-    victoryRingReveal 420ms ease forwards;
-}
-
-.verstappen-takeover[data-phase='2'] .verstappen-takeover__ring--inner,
-.verstappen-takeover[data-phase='3'] .verstappen-takeover__ring--inner,
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__ring--inner {
-  animation:
-    victoryRing 4s linear infinite reverse,
-    victoryRingReveal 420ms ease forwards;
-}
-
-.verstappen-takeover[data-phase='3'] .verstappen-takeover__panel,
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__panel {
-  animation: victoryPanelIn 680ms cubic-bezier(0.16, 0.88, 0.2, 1) forwards;
-}
-
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__stat,
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__track span {
-  animation: victoryDataIn 520ms ease forwards;
-}
-
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__stat:nth-child(2) {
-  animation-delay: 80ms;
-}
-
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__stat:nth-child(3) {
-  animation-delay: 160ms;
-}
-
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__track span:nth-child(2) {
-  animation-delay: 100ms;
-}
-
-.verstappen-takeover[data-phase='4'] .verstappen-takeover__track span:nth-child(3) {
-  animation-delay: 180ms;
-}
-
-.verstappen-takeover__stat,
-.verstappen-takeover__track span {
-  opacity: 0;
-  transform: translateY(14px);
-}
-
-@keyframes barrageTraverse {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.98);
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 12px;
   }
 
-  10% {
-    opacity: 1;
-    transform: translate3d(-6vw, 0, 0) scale(1);
+  .dashboard__sidebar {
+    order: 2;
   }
 
-  100% {
-    opacity: 0;
-    transform: translate3d(calc(-118vw - 100%), 0, 0) scale(1);
+  .dashboard__main {
+    order: 1;
   }
+
+  .top-nav__links { display: none; }
+  .mobile-nav { display: block; }
+
+  body { padding-bottom: 76px; }
 }
 
-@keyframes victoryFlash {
-  0% {
-    opacity: 0;
+@media (max-width: 640px) {
+  .dashboard {
+    padding: 8px;
+    gap: 10px;
   }
 
-  30% {
-    opacity: 0.9;
+  .play-control {
+    width: 56px;
+    height: 56px;
   }
 
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes victorySlash {
-  0% {
-    opacity: 0;
-    transform: translateY(22px) rotate(22deg) scaleY(0.4);
+  .top-nav {
+    padding: 0 12px;
+    height: 48px;
   }
 
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotate(22deg) scaleY(1);
+  .top-nav__brand {
+    font-size: 1.15rem;
   }
 }
-
-@keyframes victoryHeroIn {
-  0% {
-    opacity: 0;
-    transform: translateY(26px) scale(0.9);
-  }
-
-  70% {
-    opacity: 1;
-    transform: translateY(-4px) scale(1.02);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes victoryPanelIn {
-  0% {
-    opacity: 0;
-    transform: translateY(34px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes victoryElementIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.72);
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes victoryRingReveal {
-  0% {
-    opacity: 0;
-  }
-
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes victoryDataIn {
-  0% {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes orangeTakeover {
-  0% {
-    opacity: 0;
-    transform: scale(1.02) translateY(10px);
-  }
-
-  18% {
-    opacity: 0.18;
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes victoryRing {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-

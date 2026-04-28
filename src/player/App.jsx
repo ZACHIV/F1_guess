@@ -20,12 +20,13 @@ import {
   pickResultVariant
 } from './result-copy.js';
 import AudioPlayer from './components/AudioPlayer.jsx';
+import DashboardHeader from './components/DashboardHeader.jsx';
 import PosterStage from './components/PosterStage.jsx';
 import ResultReviewPage from './components/ResultReviewPage.jsx';
 import TimerRing from './components/TimerRing.jsx';
 import InteractionDock from './components/InteractionDock.jsx';
-import LocalePicker from './components/LocalePicker.jsx';
 import TelemetryStrip from './components/TelemetryStrip.jsx';
+import WaveformDisplay from './components/WaveformDisplay.jsx';
 import {
   detectInitialLocale,
   getLocalizedAnswerLabel,
@@ -67,10 +68,7 @@ const MARKETING_SNAPSHOT_PRESETS = {
 };
 
 function pickRandomChallenge(challenges, excludeId = '') {
-  if (!challenges.length) {
-    return null;
-  }
-
+  if (!challenges.length) return null;
   const available = challenges.filter((challenge) => challenge.id !== excludeId);
   const pool = available.length ? available : challenges;
   return pool[Math.floor(Math.random() * pool.length)];
@@ -90,11 +88,7 @@ function getPlayableChallenges(challenges) {
 function buildTelemetryModel(locationData, carData) {
   const locationFrames = normalizeTelemetryPoints(toElapsedSamples(locationData), TRACK_DIMENSIONS);
   const carFrames = toElapsedSamples(carData);
-
-  if (!locationFrames.length || !carFrames.length) {
-    return null;
-  }
-
+  if (!locationFrames.length || !carFrames.length) return null;
   return {
     locationFrames,
     carFrames,
@@ -107,10 +101,7 @@ function buildTelemetryModel(locationData, carData) {
 async function loadChallengeLibrary() {
   try {
     const response = await fetch('/api/studio/library');
-    if (!response.ok) {
-      throw new Error('Load failed');
-    }
-
+    if (!response.ok) throw new Error('Load failed');
     const payload = await response.json();
     return Array.isArray(payload) ? payload : payload.records;
   } catch {
@@ -124,106 +115,57 @@ function buildResult(challenge, outcome, playerTimeMs, locale, variantId = pickR
   const answerLabel = getLocalizedAnswerLabel(challenge, locale);
   const localizedTrackName = answerLabel.split(' · ')[0];
   const narrative = buildResultNarrative(
-    locale,
-    outcome,
-    {
-      track: localizedTrackName,
-      answer: answerLabel,
-      delta: formatScoreTime(deltaMs)
-    },
+    locale, outcome,
+    { track: localizedTrackName, answer: answerLabel, delta: formatScoreTime(deltaMs) },
     variantId
   );
 
   if (outcome === 'win') {
     return {
-      outcome,
-      playerTimeMs,
-      benchmarkMs,
-      variantId: narrative.variantId,
-      locale,
+      outcome, playerTimeMs, benchmarkMs, variantId: narrative.variantId, locale,
       localized: {
-        headline: narrative.headline,
-        copy: narrative.copy,
+        headline: narrative.headline, copy: narrative.copy,
         deltaLabel: t(locale, 'deltaFaster', { delta: formatScoreTime(deltaMs) })
       }
     };
   }
-
   if (outcome === 'timeout') {
     return {
-      outcome,
-      playerTimeMs,
-      benchmarkMs,
-      variantId: narrative.variantId,
-      locale,
+      outcome, playerTimeMs, benchmarkMs, variantId: narrative.variantId, locale,
       localized: {
-        headline: narrative.headline,
-        copy: narrative.copy,
+        headline: narrative.headline, copy: narrative.copy,
         deltaLabel: t(locale, 'deltaBehind', { delta: formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0)) })
       }
     };
   }
-
   if (outcome === 'forfeit') {
     return {
-      outcome,
-      playerTimeMs,
-      benchmarkMs,
-      variantId: narrative.variantId,
-      locale,
+      outcome, playerTimeMs, benchmarkMs, variantId: narrative.variantId, locale,
       localized: {
-        headline: narrative.headline,
-        copy: narrative.copy,
+        headline: narrative.headline, copy: narrative.copy,
         deltaLabel: t(locale, 'deltaBehind', { delta: formatScoreTime(Math.max(playerTimeMs - benchmarkMs, 0)) })
       }
     };
   }
-
   return {
-    outcome,
-    playerTimeMs,
-    benchmarkMs,
-    variantId: narrative.variantId,
-    locale,
+    outcome, playerTimeMs, benchmarkMs, variantId: narrative.variantId, locale,
     localized: {
-      headline: narrative.headline,
-      copy: narrative.copy,
+      headline: narrative.headline, copy: narrative.copy,
       deltaLabel: t(locale, 'deltaSlower', { delta: formatScoreTime(deltaMs) })
     }
   };
 }
 
 function getMarketingSnapshotConfig() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
+  if (typeof window === 'undefined') return null;
   const snapshotKey = new URLSearchParams(window.location.search).get('snapshot');
-  if (!snapshotKey) {
-    return null;
-  }
-
+  if (!snapshotKey) return null;
   return MARKETING_SNAPSHOT_PRESETS[snapshotKey] ?? null;
 }
 
 function getInitialTrackIdFromUrl() {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
+  if (typeof window === 'undefined') return '';
   return new URLSearchParams(window.location.search).get('track') ?? '';
-}
-
-function getHeroTitleLines(locale) {
-  if (locale === 'zh-Hans') {
-    return ['你能战', '胜 Max', '吗？'];
-  }
-
-  if (locale === 'zh-Hant') {
-    return ['你能戰', '勝 Max', '嗎？'];
-  }
-
-  return [t(locale, 'heroTitle')];
 }
 
 export default function App({ initialLibrary }) {
@@ -268,34 +210,19 @@ export default function App({ initialLibrary }) {
   }, [locale]);
 
   useEffect(() => {
-    if (initialLibrary) {
-      return undefined;
-    }
-
+    if (initialLibrary) return undefined;
     let cancelled = false;
     loadChallengeLibrary().then((records) => {
-      if (cancelled) {
-        return;
-      }
-
+      if (cancelled) return;
       const playable = getPlayableChallenges(records);
       setLibrary(playable);
       setSelectedChallengeId((currentId) => {
-        if (playable.some((entry) => entry.id === currentId)) {
-          return currentId;
-        }
-
-        if (initialTrackId && playable.some((entry) => entry.id === initialTrackId)) {
-          return initialTrackId;
-        }
-
+        if (playable.some((entry) => entry.id === currentId)) return currentId;
+        if (initialTrackId && playable.some((entry) => entry.id === initialTrackId)) return initialTrackId;
         return pickRandomChallenge(playable)?.id ?? '';
       });
     });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [initialLibrary, initialTrackId]);
 
   const challenge = useMemo(
@@ -304,10 +231,7 @@ export default function App({ initialLibrary }) {
   );
 
   useEffect(() => {
-    if (!challenge) {
-      return undefined;
-    }
-
+    if (!challenge) return undefined;
     setError('');
     setFeedback(null);
     setResult(null);
@@ -327,36 +251,23 @@ export default function App({ initialLibrary }) {
     setCanResume(false);
 
     let cancelled = false;
-
     loadChallengeTelemetry(challenge)
       .then(({ locationData, carData }) => {
-        if (cancelled) {
-          return;
-        }
-
+        if (cancelled) return;
         const nextTelemetryModel = buildTelemetryModel(locationData, carData);
         setTelemetryModel(nextTelemetryModel);
         setMarker(nextTelemetryModel?.initialMarker ?? { x: 180, y: 125 });
         setHudState(nextTelemetryModel?.initialHud ?? EMPTY_HUD);
       })
       .catch((loadError) => {
-        if (cancelled) {
-          return;
-        }
-
+        if (cancelled) return;
         setError(loadError instanceof Error ? loadError.message : t(locale, 'loadChallengeError'));
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [challenge]);
 
   useEffect(() => {
-    if (!telemetryModel) {
-      return;
-    }
-
+    if (!telemetryModel) return;
     const telemetryElapsedMs = getSynchronizedElapsedMs(currentTime, challenge);
     const nextMarker = getInterpolatedTelemetryPoint(telemetryModel.locationFrames, telemetryElapsedMs) ?? telemetryModel.initialMarker;
     const nextHudState = getNearestTelemetrySample(telemetryModel.carFrames, telemetryElapsedMs) ?? telemetryModel.initialHud;
@@ -365,10 +276,7 @@ export default function App({ initialLibrary }) {
   }, [challenge, currentTime, telemetryModel]);
 
   useEffect(() => {
-    if (!result || result.locale === locale) {
-      return;
-    }
-
+    if (!result || result.locale === locale) return;
     setResult(buildResult(challenge, result.outcome, result.playerTimeMs, locale, result.variantId));
   }, [challenge, locale, result]);
 
@@ -377,21 +285,16 @@ export default function App({ initialLibrary }) {
     resultAudioCleanupRef.current = () => {};
     resetResultAudioState();
     setAnthemMuted(false);
-
     if (!result || result.outcome === 'win') {
       setCanMuteAnthem(false);
       return undefined;
     }
-
     const cleanup = playResultAudioCue(result);
     resultAudioCleanupRef.current = cleanup;
     setCanMuteAnthem(true);
-
     return () => {
       cleanup?.();
-      if (resultAudioCleanupRef.current === cleanup) {
-        resultAudioCleanupRef.current = () => {};
-      }
+      if (resultAudioCleanupRef.current === cleanup) resultAudioCleanupRef.current = () => {};
       resetResultAudioState();
       setCanMuteAnthem(false);
       setAnthemMuted(false);
@@ -399,24 +302,13 @@ export default function App({ initialLibrary }) {
   }, [challenge?.id, result?.outcome, result?.playerTimeMs]);
 
   useEffect(() => {
-    if (submitState !== 'error') {
-      return undefined;
-    }
-
-    const resetTimer = window.setTimeout(() => {
-      setSubmitState('idle');
-    }, 1000);
-
-    return () => {
-      window.clearTimeout(resetTimer);
-    };
+    if (submitState !== 'error') return undefined;
+    const resetTimer = window.setTimeout(() => setSubmitState('idle'), 1000);
+    return () => window.clearTimeout(resetTimer);
   }, [submitState]);
 
   useEffect(() => {
-    if (!marketingSnapshot || !challenge || !telemetryModel || marketingSnapshotAppliedRef.current) {
-      return;
-    }
-
+    if (!marketingSnapshot || !challenge || !telemetryModel || marketingSnapshotAppliedRef.current) return;
     marketingSnapshotAppliedRef.current = true;
     setLocale(marketingSnapshot.locale ?? 'en');
     setError('');
@@ -426,20 +318,11 @@ export default function App({ initialLibrary }) {
     setCurrentTime(marketingSnapshot.currentTimeMs ?? 0);
     setCanResume(Boolean(marketingSnapshot.canResume));
     setIsPlaying(Boolean(marketingSnapshot.isPlaying));
-
     if (marketingSnapshot.resultOutcome) {
       setRunState('result');
-      setResult(
-        buildResult(
-          challenge,
-          marketingSnapshot.resultOutcome,
-          marketingSnapshot.playerTimeMs ?? 0,
-          marketingSnapshot.locale ?? 'en'
-        )
-      );
+      setResult(buildResult(challenge, marketingSnapshot.resultOutcome, marketingSnapshot.playerTimeMs ?? 0, marketingSnapshot.locale ?? 'en'));
       return;
     }
-
     setResult(null);
     setRunState(marketingSnapshot.runState ?? 'idle');
   }, [challenge, marketingSnapshot, telemetryModel]);
@@ -448,15 +331,12 @@ export default function App({ initialLibrary }) {
   const sessionElapsedMs = Math.min(currentTime, MAX_GUESS_MS);
   const displayElapsedMs = result?.playerTimeMs ?? sessionElapsedMs;
   const telemetryPath = telemetryModel?.telemetryPath ?? 'M 40 200 L 110 160 L 185 146 L 246 102 L 310 70';
-  const heroLines = getHeroTitleLines(locale);
-  const heroIsCjk = locale === 'zh-Hans' || locale === 'zh-Hant';
 
   const playFromStart = useEffectEvent(async () => {
     if (!audioPlayer) {
       setError(t(locale, 'audioArmingError'));
       return false;
     }
-
     try {
       audioPlayer.currentTime = 0;
       setCurrentTime(0);
@@ -470,10 +350,7 @@ export default function App({ initialLibrary }) {
   });
 
   const resumePlayback = useEffectEvent(async () => {
-    if (!audioPlayer) {
-      return false;
-    }
-
+    if (!audioPlayer) return false;
     try {
       await audioPlayer.play();
       setCanResume(true);
@@ -495,15 +372,16 @@ export default function App({ initialLibrary }) {
   });
 
   useEffect(() => {
-    if (runState !== 'live' || sessionElapsedMs < MAX_GUESS_MS) {
-      return;
-    }
-
+    if (runState !== 'live' || sessionElapsedMs < MAX_GUESS_MS) return;
     finishRound('timeout', MAX_GUESS_MS);
   }, [finishRound, runState, sessionElapsedMs]);
 
   if (!challenge) {
-    return <div className="flex min-h-screen items-center justify-center bg-[#040507] text-white">{t(locale, 'noPlayableChallenge')}</div>;
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', color: '#fff' }}>
+        {t(locale, 'noPlayableChallenge')}
+      </div>
+    );
   }
 
   async function handleStart() {
@@ -514,69 +392,44 @@ export default function App({ initialLibrary }) {
     setAnswerValue('');
     setRunState('live');
     const didStart = await playFromStart();
-    if (!didStart) {
-      setRunState('idle');
-    }
+    if (!didStart) setRunState('idle');
   }
 
   async function handleTogglePlayback() {
-    if (!audioPlayer) {
-      return;
-    }
-
+    if (!audioPlayer) return;
     if (runState === 'live' && isPlaying) {
       audioPlayer.pause();
       return;
     }
-
     if (runState === 'live' && canResume) {
       await resumePlayback();
       return;
     }
-
     await playFromStart();
   }
 
   async function handleReplayLive() {
-    if (runState !== 'live') {
-      return;
-    }
-
+    if (runState !== 'live') return;
     await playFromStart();
   }
 
   function handleAnswerSubmit() {
-    if (runState !== 'live') {
-      return;
-    }
-
-    if (!answerValue.trim()) {
-      return;
-    }
-
+    if (runState !== 'live') return;
+    if (!answerValue.trim()) return;
     if (isChallengeAnswerCorrect(challenge, answerValue)) {
       const playerTimeMs = Math.min(currentTime, MAX_GUESS_MS);
       setSubmitState('idle');
       finishRound(playerTimeMs < currentBenchmarkMs ? 'win' : 'lose', playerTimeMs);
       return;
     }
-
     setSubmitState('error');
-    setFeedback({
-      kind: 'miss',
-      message: t(locale, 'wrongCircuitFeedback')
-    });
+    setFeedback({ kind: 'miss', message: t(locale, 'wrongCircuitFeedback') });
   }
 
   function handleNextChallenge() {
     const nextChallenge = pickRandomChallenge(library, challenge.id);
-    if (!nextChallenge) {
-      return;
-    }
-
-    startTransition(() => {
-      setSelectedChallengeId(nextChallenge.id);
-    });
+    if (!nextChallenge) return;
+    startTransition(() => setSelectedChallengeId(nextChallenge.id));
   }
 
   async function handleRetry() {
@@ -587,16 +440,11 @@ export default function App({ initialLibrary }) {
     setAnswerValue('');
     setRunState('live');
     const didStart = await playFromStart();
-    if (!didStart) {
-      setRunState('idle');
-    }
+    if (!didStart) setRunState('idle');
   }
 
   function handleSurrender() {
-    if (runState !== 'live') {
-      return;
-    }
-
+    if (runState !== 'live') return;
     finishRound('forfeit', Math.min(currentTime, MAX_GUESS_MS));
   }
 
@@ -609,10 +457,7 @@ export default function App({ initialLibrary }) {
       <>
         <AudioPlayer
           audioSrc={challenge.audioSrc}
-          onFinish={() => {
-            setIsPlaying(false);
-            setCanResume(false);
-          }}
+          onFinish={() => { setIsPlaying(false); setCanResume(false); }}
           onPlayStateChange={setIsPlaying}
           onReady={setAudioPlayer}
           onTimeUpdate={setCurrentTime}
@@ -641,144 +486,204 @@ export default function App({ initialLibrary }) {
     <>
       <AudioPlayer
         audioSrc={challenge.audioSrc}
-        onFinish={() => {
-          setIsPlaying(false);
-          setCanResume(false);
-        }}
+        onFinish={() => { setIsPlaying(false); setCanResume(false); }}
         onPlayStateChange={setIsPlaying}
         onReady={setAudioPlayer}
         onTimeUpdate={setCurrentTime}
       />
       <PosterStage>
-        <div className="duel-stage__topbar">
-          <div className="duel-stage__brand-block">
-            <span className="duel-stage__brand">F1.GUESS</span>
-            <span className="duel-stage__sys">sys.online // op.ready</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              className="rounded-full border border-[rgba(244,233,226,0.14)] bg-black/22 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.22em] text-white/72 backdrop-blur-xl transition hover:bg-black/34 hover:text-white"
-              href="/"
-            >
-              Back to gallery
-            </a>
-            <LocalePicker locale={locale} onChange={setLocale} />
-          </div>
-        </div>
+        <DashboardHeader
+          activeNav="play"
+          locale={locale}
+          onLocaleChange={setLocale}
+          galleryHref="/"
+        />
 
-        <div className="duel-stage__layout">
-          <section className="duel-console duel-console--hero">
-            <p className="duel-console__eyebrow">for operators, not spectators</p>
-            <h1 className={`duel-stage__hero-title ${heroIsCjk ? 'duel-stage__hero-title--cjk' : 'hero-display'}`}>
-              {heroLines.map((line) => (
-                <span className="duel-stage__hero-line" key={line}>{line}</span>
-              ))}
-            </h1>
-            <p className="duel-stage__lede">{t(locale, 'idleHelper')}</p>
-
-            <div className="duel-stage__hero-meta">
-              <div className="duel-console__chip">
-                <span>driver</span>
-                <strong>{challenge.driverName} #{challenge.driverNumber || '00'}</strong>
-              </div>
-              <div className="duel-console__chip">
-                <span>clip</span>
-                <strong>{challenge.durationLabel || '00:00'}</strong>
-              </div>
-              <div className="duel-console__chip">
-                <span>benchmark</span>
-                <strong>{formatScoreTime(currentBenchmarkMs)}</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="duel-console duel-console--focus">
-            <div className="duel-stage__focus-header">
-              <div>
-                <p className="hud-label">unknown circuit loaded</p>
-                <h2 className="duel-stage__focus-title">{challenge.category || 'Race Pole Onboard'}</h2>
-              </div>
-              <span className="duel-stage__focus-state">
-                {runState === 'live' ? 'listening' : runState === 'idle' ? 'standby' : 'sealed'}
-              </span>
-            </div>
-
-            <div className="duel-stage__focus-display">
-              <img
-                alt={challenge.driverName ? `${challenge.driverName} poster` : 'Driver poster'}
-                className="duel-stage__focus-poster"
-                src={challenge.posterSrc || '/assets/max_with_earphone.jpeg'}
-              />
-              <div className="duel-stage__focus-overlay" />
-              <div className="duel-stage__focus-copy">
-                <span className="duel-stage__focus-kicker">audio trace armed</span>
-                <strong>{answerValue.trim() || 'UNKNOWN CIRCUIT'}</strong>
-                <p>Use engine note, straight length, braking rhythm, and corner cadence to identify the venue.</p>
-              </div>
-            </div>
-          </section>
-
-          <aside className="duel-stage__sidebar">
+        <div className="dashboard">
+          {/* Sidebar */}
+          <aside className="dashboard__sidebar">
             <TelemetryStrip hudState={hudState} />
 
-            <section className="duel-console duel-console--timer">
-              <p className="hud-label">session clock</p>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <strong className="duel-stage__sidebar-value">{runState === 'live' ? 'signal live' : 'waiting arm'}</strong>
-                  <p className="duel-stage__sidebar-copy">The timer starts with audio playback and freezes on reveal.</p>
-                </div>
-                <TimerRing
-                  currentTime={displayElapsedMs}
-                  durationMs={MAX_GUESS_MS}
-                />
+            <section className="panel" style={{ padding: 16 }}>
+              <p className="telemetry-card__label" style={{ marginBottom: 12 }}>Session Clock</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TimerRing currentTime={displayElapsedMs} durationMs={MAX_GUESS_MS} />
+              </div>
+              <p style={{ margin: '12px 0 0', fontSize: '0.78rem', lineHeight: 1.6, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                Timer starts with playback. Freezes on reveal.
+              </p>
+            </section>
+
+            <section className="panel" style={{ padding: 16 }}>
+              <p className="telemetry-card__label" style={{ marginBottom: 12 }}>Protocol</p>
+              <div style={{ display: 'grid', gap: 6 }}>
+                {[
+                  { label: 'Audio Armed', active: runState !== 'idle' },
+                  { label: 'Guess Window', active: runState === 'live' },
+                  { label: 'Feedback Pulse', active: Boolean(feedback) },
+                  { label: 'Track Reveal', active: runState === 'result' }
+                ].map((step) => (
+                  <div
+                    key={step.label}
+                    style={{
+                      padding: '10px 12px',
+                      border: `1px solid ${step.active ? 'var(--color-red)' : 'var(--color-border-soft)'}`,
+                      borderRadius: 'var(--radius-control)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 10,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: step.active ? '#fff' : 'var(--color-text-dim)',
+                      background: step.active ? 'rgba(255,51,48,0.08)' : 'transparent'
+                    }}
+                  >
+                    {step.label}
+                  </div>
+                ))}
               </div>
             </section>
 
-            <section className="duel-console duel-console--trace">
-              <p className="hud-label">protocol markers</p>
-              <div className="duel-stage__protocol">
-                <span className={runState !== 'idle' ? 'is-active' : ''}>audio armed</span>
-                <span className={runState === 'live' ? 'is-active' : ''}>guess window</span>
-                <span className={Boolean(feedback) ? 'is-active' : ''}>feedback pulse</span>
-                <span className={runState === 'result' ? 'is-active' : ''}>track reveal</span>
+            {/* Challenge meta chips */}
+            <section className="panel" style={{ padding: 16 }}>
+              <p className="telemetry-card__label" style={{ marginBottom: 10 }}>Challenge</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <span className="chip">{challenge.driverName} #{challenge.driverNumber || '00'}</span>
+                <span className="chip">{challenge.durationLabel || '00:00'}</span>
+                <span className="chip chip--hard">{formatScoreTime(currentBenchmarkMs)}</span>
               </div>
             </section>
           </aside>
+
+          {/* Main */}
+          <main className="dashboard__main">
+            {/* Hero area */}
+            <div className="panel" style={{ padding: 24 }}>
+              <p className="telemetry-card__label" style={{ marginBottom: 8 }}>For Operators, Not Spectators</p>
+              <h1 style={{
+                margin: 0,
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(2.2rem, 5vw, 3.6rem)',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                lineHeight: 0.9,
+                color: '#fff'
+              }}>
+                {t(locale, 'heroTitle')}
+              </h1>
+              <p style={{ margin: '12px 0 0', fontSize: '0.92rem', lineHeight: 1.7, color: 'var(--color-text-muted)', maxWidth: '28rem' }}>
+                {t(locale, 'idleHelper')}
+              </p>
+
+              {runState === 'live' ? (
+                <div style={{ marginTop: 20 }}>
+                  <WaveformDisplay
+                    currentTime={currentTime}
+                    durationMs={challenge.clipDurationMs || MAX_GUESS_MS}
+                    isPlaying={isPlaying}
+                  />
+                </div>
+              ) : (
+                <div style={{
+                  marginTop: 20,
+                  height: 140,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid var(--color-border-soft)',
+                  borderRadius: 'var(--radius-panel)',
+                  background: 'var(--color-surface-deep)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}>
+                  <div className="hud-grid" style={{ position: 'absolute', inset: 0, opacity: 0.4 }} />
+                  <span style={{ position: 'relative', zIndex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-text-dim)' }}>
+                    Audio Trace Armed
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Interaction Dock */}
+            <InteractionDock
+              answerValue={answerValue}
+              canStart={Boolean(audioPlayer)}
+              canResume={canResume}
+              feedback={feedback}
+              isPlaying={isPlaying}
+              onAnswerChange={(value) => {
+                setAnswerValue(value);
+                if (submitState === 'error') setSubmitState('idle');
+              }}
+              onReplay={handleReplayLive}
+              onAnswerSubmit={handleAnswerSubmit}
+              onStart={handleStart}
+              onSurrender={handleSurrender}
+              onTogglePlayback={handleTogglePlayback}
+              runState={runState}
+              submitState={submitState}
+              locale={locale}
+              timer={(
+                <TimerRing currentTime={displayElapsedMs} durationMs={MAX_GUESS_MS} />
+              )}
+            />
+          </main>
         </div>
 
-        <div className="duel-stage__dock">
-          <InteractionDock
-            answerValue={answerValue}
-            canStart={Boolean(audioPlayer)}
-            canResume={canResume}
-            feedback={feedback}
-            isPlaying={isPlaying}
-            onAnswerChange={(value) => {
-              setAnswerValue(value);
-              if (submitState === 'error') {
-                setSubmitState('idle');
-              }
-            }}
-            onReplay={handleReplayLive}
-            onAnswerSubmit={handleAnswerSubmit}
-            onStart={handleStart}
-            onSurrender={handleSurrender}
-            onTogglePlayback={handleTogglePlayback}
-            runState={runState}
-            submitState={submitState}
-            locale={locale}
-            timer={(
-              <TimerRing
-                currentTime={displayElapsedMs}
-                durationMs={MAX_GUESS_MS}
-              />
-            )}
-          />
-        </div>
+        {/* Mobile bottom nav */}
+        <nav className="mobile-nav">
+          <div className="mobile-nav__items">
+            <button className="mobile-nav__item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              Play
+            </button>
+            <button className="mobile-nav__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20V10M18 20V4M6 20v-4" />
+              </svg>
+              Practice
+            </button>
+            <button className="mobile-nav__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              Challenges
+            </button>
+            <button className="mobile-nav__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 20V10M12 20V4M6 20v-4" />
+              </svg>
+              Stats
+            </button>
+            <button className="mobile-nav__item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              Settings
+            </button>
+          </div>
+        </nav>
 
         {error ? (
-          <div className="pointer-events-none absolute left-1/2 top-24 z-20 w-[min(92%,620px)] -translate-x-1/2 rounded-full border border-white/20 bg-black/28 px-4 py-2 text-center text-xs text-white/90 backdrop-blur-xl">
+          <div style={{
+            position: 'fixed',
+            left: '50%',
+            top: 80,
+            transform: 'translateX(-50%)',
+            zIndex: 100,
+            maxWidth: '92%',
+            width: 620,
+            padding: '8px 16px',
+            borderRadius: '999px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(20px)',
+            fontSize: '0.78rem',
+            textAlign: 'center',
+            color: '#fff'
+          }}>
             {error}
           </div>
         ) : null}
